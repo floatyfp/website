@@ -26,5 +26,5 @@ doc/api/
 .flutter-plugins
 .flutter-plugins-dependencies
 data/blog.db
-data/uploads
-files
+data/uploads/
+files/
