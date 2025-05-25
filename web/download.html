@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Download Floaty</title>
+  <link href="/tailwind.output.css" rel="stylesheet">
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/download.css" rel="stylesheet">
+</head>
+<body class="min-h-screen flex flex-col w-full overflow-x-hidden bg-[#0A0B15]">
+  <div id="navbar-placeholder"></div>
+  <script>
+    fetch('/navbar.html')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('navbar-placeholder').innerHTML = data;
+        const script = document.createElement('script');
+        script.src = '/navbar.js';
+        document.body.appendChild(script);
+      });
+  </script>
+  <main class="flex-1 flex flex-col items-center justify-center w-full pt-12 pb-8" style="background-image: url('/images/downloadbackground.png'); background-size: cover; background-position: center; background-repeat: no-repeat;">
+    <h1 class="text-white text-5xl font-extrabold mb-2 text-center">Download Floaty</h1>
+    <!-- Platform Selector Bar -->
+    <div class="w-full flex justify-center mt-6">
+      <div class="flex flex-wrap bg-[#111122] rounded-[15px] px-1.75 py-1.75 gap-1.5 shadow-lg">
+        <!-- Windows -->
+        <button id="platform-windows" class="flex rounded-xl items-center gap-1.5 px-4 py-1.5 font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] bg-[#64009E] text-white shadow active disabled-btn" aria-pressed="true">
+          <img src="images/windows.png" alt="Windows" class="h-6 w-6 object-contain" />
+          Windows
+        </button>
+        <!-- MacOS -->
+        <button id="platform-macos" class="flex rounded-xl items-center gap-1.5 px-4 py-1.5 font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] text-white/80 hover:text-white disabled-btn" aria-pressed="false">
+          <img src="images/macos.png" alt="macOS" class="h-6 w-6 object-contain" />
+          macOS
+        </button>
+        <!-- Linux -->
+        <button id="platform-linux" class="flex rounded-xl items-center gap-1.5 px-4 py-1.5 font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] text-white/80 hover:text-white disabled-btn" aria-pressed="false">
+          <img src="images/linux.png" alt="Linux" class="h-6 w-6 object-contain" />
+          Linux
+        </button>
+        <!-- Android -->
+        <button id="platform-android" class="flex rounded-xl items-center gap-1.5 px-4 py-1.5 font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] text-white/80 hover:text-white disabled-btn" aria-pressed="false">
+          <img src="images/android.png" alt="Android" class="h-6 w-6 object-contain" />
+          Android
+        </button>
+        <!-- iOS -->
+        <button id="platform-ios" class="flex rounded-xl items-center gap-1.5 px-4 py-1.5 font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] text-white/80 hover:text-white disabled-btn" aria-pressed="false">
+          <img src="images/iosmacos.png" alt="iOS/iPadOS" class="h-6 w-6 object-contain" />
+          iOS/iPadOS
+        </button>
+      </div>
+    </div>
+
+    <div id="download-card" class="flex bg-[#111122] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.25)] px-8 py-8 gap-10 mt-10 mb-10 max-w-3xl w-full items-center">
+      <div class="flex-1 min-w-0">
+        <div class="flex items-center gap-2 mb-2 text-lg text-white font-semibold download-title">
+          <span style="font-size:1.5rem;"></span>
+          Loading..
+        </div>
+        <div class="text-gray-300 text-sm mb-4 download-info">loading...</div>
+        <div class="flex flex-col gap-2">
+        </div>
+      </div>
+      <div class="items-center justify-center bg-[#22223a] rounded-lg w-[140px] h-[140px] text-6xl text-white hidden md:flex" aria-label="Floaty logo"></div>
+    </div>
+    <!-- Release Channel Selector Bar -->
+    <div class="w-full flex justify-center mt-2">
+      <div class="flex flex-wrap bg-[#111122] rounded-[15px] px-1.75 py-1.75 gap-1.5 shadow-lg">
+        <!-- Release -->
+        <button id="release-btn" class="flex rounded-xl items-center gap-1.5 px-4 py-1.5 font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] bg-[#64009E] text-white shadow active disabled-btn" aria-pressed="true">
+          <img src="images/release.png" alt="Release" class="h-6 w-6 object-contain" />
+          Release
+        </button>
+        <!-- Beta -->
+        <button id="beta-btn" class="flex rounded-xl items-center gap-1.5 px-4 py-1.5 font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] text-white/80 hover:text-white disabled-btn" aria-pressed="false">
+          <img src="images/beta.png" alt="Beta" class="h-6 w-6 object-contain" />
+          Beta
+        </button>
+        <!-- Nightly -->
+        <button id="nightly-btn" class="flex rounded-xl items-center gap-1.5 px-4 py-1.5 font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] text-white/80 hover:text-white disabled-btn" aria-pressed="false">
+          <img src="images/nightly.png" alt="Nightly" class="h-6 w-6 object-contain" />
+          Nightly
+        </button>
+      </div>
+    </div>
+
+  </main>
+  <div id="footer-container"></div>
+  <script src="/download.js"></script>
+  <script>
+    fetch('/footer.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('footer-container').innerHTML = html;
+      });
+  </script>
+</body>
+</html>

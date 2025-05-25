@@ -1,0 +1,65 @@
+<!--
+  To use this footer so it always appears after the content (and requires scrolling on short pages):
+  1. Wrap your main content in <main class="flex-1"> ... </main>.
+  2. Set <body class="min-h-screen flex flex-col"> in your page HTML.
+  3. Place this footer after <main>.
+-->
+<style>
+  /* Footer always after content, never sticky or fixed */
+  body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  main.flex-1 {
+    flex: 1 0 auto;
+  }
+  footer {
+    flex-shrink: 0;
+    margin-top: auto;
+  }
+</style>
+<footer class="bg-gradient-to-r from-[#560097] to-[#480072] w-full pt-8 px-4 overflow-hidden">
+  <div class="max-w-6xl mx-auto flex flex-col md:flex-row md:items-start md:justify-between gap-8">
+    <!-- Left: Logo and copyright -->
+    <div class="flex flex-col items-start md:w-1/4 overflow-hidden">
+      <h2 class="text-3xl font-bold text-white mb-1">Floaty</h2>
+      <p class="text-gray-200 text-sm">Not affiliated with Floatplane Media, Inc.</p>
+      <div class="flex items-center mb-6">
+        <span class="text-gray-200 text-lg mr-2">©</span>
+        <a href="https://autow.in/" class="text-gray-200 hover:underline">bw86 stuff, 2025</a>
+      </div>
+      <img src="/images/footer-mascot.svg" alt="Floaty Mascot" class="w-24 mt-2" draggable="false" />
+    </div>
+    <!-- Center: Links -->
+    <div class="flex flex-1 flex-wrap gap-12 justify-between md:justify-end">
+      <div>
+        <h3 class="font-semibold text-white mb-2">Downloads</h3>
+        <ul class="text-gray-100 space-y-1">
+          <li><a href="/download#windows" class="hover:underline">Download for Windows</a></li>
+          <li><a href="/download#macos" class="hover:underline">Download for MacOS</a></li>
+          <li><a href="/download#linux" class="hover:underline">Download for Linux</a></li>
+          <li><a href="/download#android" class="hover:underline">Download for Android</a></li>
+          <li><a href="/download#ios" class="hover:underline">Download for iOS and iPadOS</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="font-semibold text-white mb-2">Development</h3>
+        <ul class="text-gray-100 space-y-1">
+          <li><a href="https://github.com/floatyfp/floaty" class="hover:underline">GitHub</a></li>
+          <li><a href="https://github.com/floatyfp/floaty/graphs/contributors" class="hover:underline">Contributors</a></li>
+          <li><a href="/changelogs" class="hover:underline">Changelog</a></li>
+        </ul>
+      </div>
+      <div>
+        <h3 class="font-semibold text-white mb-2">Socials</h3>
+        <ul class="text-gray-100 space-y-1">
+          <li><a href="https://bsky.app/profile/floaty.fyi" class="hover:underline">Bluesky</a></li>
+          <li><a href="https://discord.com/invite/floatyfp" class="hover:underline">Discord</a></li>
+          <li><a href="mailto:hello@floaty.fyi" class="hover:underline">Contact (email)</a></li>
+          <li><a href="/blog" class="hover:underline">Blog</a></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</footer>

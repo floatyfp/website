@@ -1,0 +1,15 @@
+body::before {
+  content: '';
+  position: fixed;
+  left: 0;
+  top: -50vh; /* Move half the gradient/image above the viewport */
+  width: 100vw;
+  height: 100vh;
+  z-index: -1;
+  background-image: url('/images/downloadbackground.png');
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-position: center top;
+  pointer-events: none;
+  opacity: 1;
+}

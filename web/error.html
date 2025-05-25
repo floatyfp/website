@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Error</title>
+  <link href="/tailwind.output.css" rel="stylesheet">
+  <link href="/fonts.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Nebula Sans', sans-serif;
+      min-height: 100vh;
+      background-image: url('/gradientback.png');
+      background-size: cover;
+      background-position: center;
+      background-repeat: no-repeat;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .glow {
+      box-shadow: 0 0 40px 8px #a21caf55, 0 0 80px 16px #2563eb55;
+    }
+  </style>
+</head>
+<body>
+  <main class="flex flex-col items-center justify-center min-h-screen">
+    <h1 class="text-7xl font-extrabold text-white mb-4">{code}</h1>
+    <p class="text-3xl text-zinc-200 mb-6">{message}</p>
+    <a href="/" class="cursor-pointer bg-purple-700 hover:bg-purple-800 text-white px-8 py-2 rounded-full font-semibold shadow-lg shadow-purple-500/50 animate-none hover:animate-pulse transition text-xl focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-75 focus:ring-offset-2">Home</a>
+  </main>
+</body>
+</html>

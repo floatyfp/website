@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title id="page-title">Loading... - FloatyWeb</title>
+  <link href="/tailwind.output.css" rel="stylesheet">
+  <link href="/fonts.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+  <style>
+    body { font-family: 'Nebula Sans', sans-serif; }
+    /* Minimal dark theme for markdown preview */
+    #post-content h1 {
+      color: #f1f5f9;
+      font-size: 2.5rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h2 {
+      color: #f1f5f9;
+      font-size: 2rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h3 {
+      color: #f1f5f9;
+      font-size: 1.5rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h4 {
+      color: #f1f5f9;
+      font-size: 1.25rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h5 {
+      color: #f1f5f9;
+      font-size: 1.1rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h6 {
+      color: #f1f5f9;
+      font-size: 1rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content p {
+      color: #e5e7eb;
+      margin-bottom: 1em;
+    }
+    #post-content strong {
+      font-weight: bold;
+      color: inherit;
+    }
+    #post-content img {
+      padding-top: 0.5em;
+      padding-bottom: 0.5em;
+    }
+    #post-content em {
+      font-style: italic;
+      color: inherit;
+    }
+    #post-content ul, #post-content ol { color: #e5e7eb; margin-left: 1.5em; }
+    #post-content code { background: #111122; color: #f472b6; padding: 2px 6px; border-radius: 4px; }
+    #post-content pre { background: #111122; color: #f472b6; padding: 1em; border-radius: 8px; overflow-x: auto; }
+    #post-content blockquote { color: #a5b4fc; border-left: 4px solid #6366f1; padding-left: 1em; margin: 1em 0; }
+  </style>
+</head>
+<body class="flex flex-col min-h-screen w-full overflow-x-hidden bg-[#0A0B15]">
+  <!-- Navigation Bar Placeholder -->
+  <div id="navbar-placeholder"></div>
+  <script>
+    fetch('/navbar.html')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('navbar-placeholder').innerHTML = data;
+        const script = document.createElement('script');
+        script.src = '/navbar.js';
+        document.body.appendChild(script);
+      });
+  </script>
+
+  <!-- Post Header Image with Background and Gradient Overlay -->
+  <div class="relative flex justify-center pt-8 pb-4">
+    <!-- Full-width Background Image with Gradient Overlay (90% header height) -->
+    <div class="absolute left-0 right-0 mx-auto" id="post-bg-img" style="top:0; width:100vw; height:90%; max-width:100vw; min-height:200px; z-index:0;">
+      <div id="post-bg-img-inner" style="position:absolute; inset:0; background-image:url('/images/post-header.png'); background-size:cover; background-position:center; filter:brightness(0.7);"></div>
+      <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgba(34,33,43,0.35) 0%, rgba(10,11,21,1) 100%);"></div>
+    </div>
+    <!-- Main Post Image (centered, prominent) with responsive padding wrapper -->
+    <div class="w-full px-6 xl:px-0">
+      <div class="relative max-w-6xl mx-auto aspect-[5/2.13] flex items-center justify-center" style="z-index:1;">
+        <img id="post-main-img" src="/images/post-header.png" alt="Post header image" class="rounded-2xl shadow-xl object-cover w-full h-full border-4 border-[#18192A]" style="background:#18192A;" />
+      </div>
+    </div>
+  </div>
+
+  <!-- Post Content Layout -->
+  <main class="flex-1 flex flex-col items-center w-full mb-6">
+    <div class="w-full px-6 xl:px-0">
+      <div class="max-w-6xl mx-auto flex flex-col md:flex-row md:items-start gap-8">
+        <!-- Main Content (Title, Summary, Body) -->
+        <div class="flex-1 min-w-0">
+          <h1 id="post-title" class="text-5xl font-extrabold text-white mb-2 mt-6 md:mt-0">Loading...</h1>
+          <div id="post-summary" class="text-lg md:text-xl text-gray-100 mb-4">Loading summary...</div>
+          <div id="post-content" class="text-gray-300 text-sm mb-8">Loading content...</div>
+        </div>
+        <!-- Meta Sidebar -->
+        <aside class="w-full md:w-64 flex-shrink-0 mb-6 md:mb-0 md:mt-12">
+          <dl class="text-sm text-gray-300 mb-2">
+            <dt class="font-bold">Published</dt>
+            <dd id="post-date">Loading date...</dd>
+            <dt class="font-bold mt-2">Author</dt>
+            <dd id="post-author">Loading author...</dd>
+            <dt class="font-bold mt-2">Tags</dt>
+          </dl>
+          <div id="post-tags" class="flex flex-wrap gap-2 mt-2"></div>
+        </aside>
+      </div>
+    </div>
+  </main>
+
+  <!-- Footer Placeholder -->
+  <div id="footer-container"></div>
+  <script>
+    fetch('/footer.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('footer-container').innerHTML = html;
+      });
+  </script>
+  <script>
+    // Utility: get slug from URL (expected pattern: /post/<slug>)
+    function getSlugFromPath() {
+      const match = window.location.pathname.match(/\/post\/([^\/]+)/);
+      return match ? decodeURIComponent(match[1]) : null;
+    }
+    async function fetchAndRenderPost() {
+      const slug = getSlugFromPath();
+      if (!slug) {
+        document.getElementById('post-title').textContent = 'Post Not Found';
+        document.getElementById('post-summary').textContent = '';
+        document.getElementById('post-content').textContent = '';
+        document.getElementById('page-title').textContent = 'Not Found - FloatyWeb';
+        return;
+      }
+      try {
+        const res = await fetch(`/api/post/${encodeURIComponent(slug)}`);
+        if (!res.ok) throw new Error('Post not found');
+        const post = await res.json();
+        // Title & summary
+        document.getElementById('post-title').textContent = post.title;
+        document.getElementById('post-summary').textContent = post.summary;
+        document.getElementById('page-title').textContent = `${post.title} - FloatyWeb`;
+        // Content (markdown-it to HTML)
+        if (window.markdownit) {
+          const md = window.markdownit();
+          document.getElementById('post-content').innerHTML = md.render(post.content || '');
+        } else {
+          document.getElementById('post-content').textContent = post.content;
+        }
+        // Date & author
+        document.getElementById('post-date').textContent = post.date || post.createdAt;
+        document.getElementById('post-author').textContent = post.author || '';
+        // Tags
+        const tagsDiv = document.getElementById('post-tags');
+        tagsDiv.innerHTML = '';
+        if (Array.isArray(post.tags)) {
+          post.tags.forEach(tag => {
+            const span = document.createElement('span');
+            span.className = 'px-2 py-0.5 rounded-full text-xs font-semibold text-white';
+            span.style.backgroundColor = tag.color || '#6366f1';
+            span.textContent = tag.name || tag;
+            tagsDiv.appendChild(span);
+          });
+        }
+        // Images
+        if (post.thumbnail) {
+          document.getElementById('post-main-img').src = post.thumbnail;
+          document.getElementById('post-bg-img-inner').style.backgroundImage = `url('${post.thumbnail}')`;
+        }
+      } catch (e) {
+        document.getElementById('post-title').textContent = 'Post Not Found';
+        document.getElementById('post-summary').textContent = '';
+        document.getElementById('post-content').textContent = '';
+        document.getElementById('page-title').textContent = 'Not Found - FloatyWeb';
+      }
+    }
+    fetchAndRenderPost();
+  </script>
+</body>
+</html>

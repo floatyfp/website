@@ -1,0 +1,7 @@
+.disabled-btn:disabled, .disabled-btn[aria-disabled="true"] {
+  opacity: 0.4 !important;
+  background: #181828 !important;
+  color: #aaa !important;
+  cursor: not-allowed !important;
+  filter: grayscale(0.2);
+}

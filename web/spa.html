@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="spa" content="true">
+  <title>FloatyWeb</title>
+  <link href="/tailwind.output.css" rel="stylesheet">
+  <link href="/fonts.css" rel="stylesheet">
+  <link href="/download.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+  <style>
+    body { font-family: 'Nebula Sans', sans-serif; }
+    /* Minimal dark theme for markdown preview */
+    #post-content h1, .dropdown-markdown h1 {
+      color: #f1f5f9;
+      font-size: 2.5rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h2, .dropdown-markdown h2 {
+      color: #f1f5f9;
+      font-size: 2rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h3, .dropdown-markdown h3 {
+      color: #f1f5f9;
+      font-size: 1.5rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h4, .dropdown-markdown h4 {
+      color: #f1f5f9;
+      font-size: 1.25rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h5, .dropdown-markdown h5 {
+      color: #f1f5f9;
+      font-size: 1.1rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content h6, .dropdown-markdown h6 {
+      color: #f1f5f9;
+      font-size: 1rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #post-content p, .dropdown-markdown p {
+      color: #e5e7eb;
+      margin-bottom: 1em;
+    }
+    #post-content strong, .dropdown-markdown strong {
+      font-weight: bold;
+      color: inherit;
+    }
+    #post-content img, .dropdown-markdown img {
+      padding-top: 0.5em;
+      padding-bottom: 0.5em;
+    }
+    #post-content em, .dropdown-markdown em {
+      font-style: italic;
+      color: inherit;
+    }
+    #post-content ul, #post-content ol, .dropdown-markdown ul, .dropdown-markdown ol { 
+      color: #e5e7eb; 
+      margin-left: 1.5em; 
+    }
+    #post-content code, .dropdown-markdown code { 
+      background: #111122; 
+      color: #f472b6; 
+      padding: 2px 6px; 
+      border-radius: 4px; 
+    }
+    #post-content pre, .dropdown-markdown pre { 
+      background: #111122; 
+      color: #f472b6; 
+      padding: 1em; 
+      border-radius: 8px; 
+      overflow-x: auto; 
+    }
+    #post-content blockquote, .dropdown-markdown blockquote { 
+      color: #a5b4fc; 
+      border-left: 4px solid #6366f1; 
+      padding-left: 1em; 
+      margin: 1em 0; 
+    }
+    
+    /* Changelog styles */
+    .changelog-bg {
+      position: absolute;
+      left: 0;
+      filter: brightness(0.6);
+      top: -35vh;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      background-image: url('/images/downloadbackground.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center top;
+      pointer-events: none;
+      opacity: 1;
+    }
+    
+    /* SPA specific styles */
+    .page {
+      display: none;
+    }
+    .page.active {
+      display: block;
+    }
+    
+    /* For smooth transitions */
+    .fade-in {
+      animation: fadeIn 0.6s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    /* Main layout structure */
+    html, body {
+      height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      position: relative;
+    }
+
+    /* Ensure pages take full width and height */
+    .page {
+      display: none;
+      width: 100%;
+      flex: 1;
+    }
+    
+    /* Active page styling */
+    #spa-content > .page.active {
+      display: flex;
+      flex-direction: column;
+      min-height: calc(100vh - 80px); /* Account for navbar and footer */
+    }
+    
+    /* Main content wrapper */
+    #spa-content {
+      flex: 1 0 auto;
+      width: 100%;
+      position: relative;
+    }
+    
+    /* Ensure the footer stays at the bottom */
+    #footer-container {
+      flex-shrink: 0;
+      width: 100%;
+    }
+  </style>
+</head>
+<body class="min-h-screen w-full overflow-x-hidden flex flex-col bg-[#0A0B15]">
+  <div class="changelog-bg hidden"></div>
+  <!-- Navigation Bar Placeholder -->
+  <div id="navbar-placeholder"></div>
+
+  <!-- SPA Content Container -->
+  <div id="spa-content">
+    <!-- Home Page -->
+    <div id="home-page" class="page">
+      <!-- Content will be loaded dynamically -->
+    </div>
+    
+    <!-- Blog Page -->
+    <div id="blog-page" class="page">
+      <!-- Content will be loaded dynamically -->
+    </div>
+    
+    <!-- Download Page -->
+    <div id="download-page" class="page">
+      <!-- Content will be loaded dynamically -->
+    </div>
+    
+    <!-- Post Page -->
+    <div id="post-page" class="page">
+      <!-- Content will be loaded dynamically -->
+    </div>
+    
+    <!-- Changelogs Page -->
+    <div id="changelogs-page" class="page">
+      <!-- Content will be loaded dynamically -->
+    </div>
+  </div>
+  </div>
+
+  <!-- Footer Placeholder -->
+  <div id="footer-container" class="mt-auto"></div>
+  
+  <!-- SPA Router and Page Content -->
+  <script src="/spa-router.js" type="module"></script>
+</body>
+</html>

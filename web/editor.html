@@ -1,0 +1,759 @@
+<!DOCTYPE html> 
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FloatyWeb Editor</title>
+  <link href="/tailwind.output.css" rel="stylesheet">
+  <link href="/fonts.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+  <!-- Global error modal utility for changelog editor -->
+  <script>
+  // Place this at the top level for global access
+  function showChangelogErrorModal(msg) {
+    let modal = document.getElementById('changelogErrorModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'changelogErrorModal';
+      modal.className = 'fixed inset-0 z-60 flex items-center justify-center';
+      modal.innerHTML = `
+        <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+        <div class="relative bg-[#18192A] rounded-2xl shadow-2xl p-8 w-full max-w-md mx-auto flex flex-col items-center">
+          <h2 class="text-2xl font-bold mb-4 text-center text-red-400">Error</h2>
+          <p class="mb-6 text-zinc-100">${msg}</p>
+          <button id="closeChangelogErrorModal" class="cursor-pointer bg-zinc-700 text-zinc-200 hover:bg-zinc-600 px-8 py-2 rounded-full font-semibold shadow-lg shadow-zinc-500/50 animate-none hover:animate-pulse transition text-xl focus:outline-none focus:ring-4 focus:ring-zinc-500 focus:ring-opacity-75 focus:ring-offset-2">Close</button>
+        </div>`;
+      document.body.appendChild(modal);
+      document.getElementById('closeChangelogErrorModal').onclick = () => modal.remove();
+    } else {
+      modal.querySelector('p').textContent = msg;
+      modal.classList.remove('hidden');
+    }
+  }
+  </script>
+  <style>
+    body { font-family: 'Nebula Sans', sans-serif; }
+    /* Minimal dark theme for markdown preview */
+    #preview h1 {
+      color: #f1f5f9;
+      font-size: 2.5rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #preview h2 {
+      color: #f1f5f9;
+      font-size: 2rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #preview h3 {
+      color: #f1f5f9;
+      font-size: 1.5rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #preview h4 {
+      color: #f1f5f9;
+      font-size: 1.25rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #preview h5 {
+      color: #f1f5f9;
+      font-size: 1.1rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #preview h6 {
+      color: #f1f5f9;
+      font-size: 1rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    #preview p {
+      color: #e5e7eb;
+      margin-bottom: 1em;
+    }
+    #preview strong {
+      font-weight: bold;
+      color: inherit;
+    }
+    #preview img {
+      padding-top: 0.5em;
+      padding-bottom: 0.5em;
+    }
+    #preview em {
+      font-style: italic;
+      color: inherit;
+    }
+    #preview ul, #preview ol { color: #e5e7eb; margin-left: 1.5em; }
+    #preview code { background: #111122; color: #f472b6; padding: 2px 6px; border-radius: 4px; }
+    #preview pre { background: #111122; color: #f472b6; padding: 1em; border-radius: 8px; overflow-x: auto; }
+    #preview blockquote { color: #a5b4fc; border-left: 4px solid #6366f1; padding-left: 1em; margin: 1em 0; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0A0B15] flex flex-col w-full h-full">
+  <!-- Top Bar -->
+  <nav class="w-full flex items-center justify-between bg-[#111122] px-8 py-4 shadow-lg">
+    <input id="title" class="flex-1 mr-4 bg-transparent text-2xl font-bold text-zinc-100 outline-none border-none placeholder-zinc-400" placeholder="Title" />
+    <div class="flex items-center gap-2">
+      <button id="settingsBtn" class="cursor-pointer p-2 rounded-full hover:bg-[#0A0B15] hover:text-purple-400 transition" title="Settings">
+        <img src="Settings.svg" class="h-10 w-10" />
+      </button>
+      <button id="publishBtn" class="cursor-pointer bg-purple-700 hover:bg-purple-800 text-white px-8 py-2 rounded-full font-semibold shadow-lg shadow-purple-500/50 animate-none hover:animate-pulse transition text-xl focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-75 focus:ring-offset-2">Publish</button>
+      <span id="requiredFieldsMsg" class="text-red-400 ml-4 hidden">Please fill out all required fields.</span>
+    </div>
+  </nav>
+
+  <!-- Editor/Preview Split -->
+  <main class="flex-1 w-full grid grid-cols-1 md:grid-cols-2 gap-2 p-2 h-0">
+    <!-- Markdown Editor -->
+    <section class="bg-[#111122] rounded-2xl shadow-lg p-4 flex flex-col h-full">
+      <textarea id="editor" class="flex-1 w-full h-full min-h-0 bg-transparent text-zinc-200 text-lg font-mono resize-none outline-none border-none placeholder-zinc-400"># Welcome
+
+Type some *Markdown*.</textarea>
+    </section>
+    <!-- Main Post Live Preview -->
+    <section class="bg-[#111122] rounded-2xl shadow-lg  flex flex-col h-full overflow-y-auto min-h-0">
+      <div id="post-preview" class="w-full h-full">
+        <!-- Live preview will be injected here -->
+      </div>
+    </section>
+  </main>
+
+  <!-- Settings Modal (hidden by default) -->
+  <div id="settingsModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+    <div class="relative rounded-2xl shadow-2xl bg-[#111122] p-8 w-full max-w-lg mx-auto flex flex-col">
+      <h2 class="text-4xl font-bold mb-6 text-center text-zinc-100">Settings</h2>
+      <!-- Hidden URL inputs for uploads -->
+      <input type="hidden" id="thumbnail">
+      <input type="hidden" id="image">
+      <div class="space-y-4">
+        <div>
+          <label class="block text-sm mb-1 text-zinc-200">Summary</label>
+          <textarea id="summary" class="w-full p-2 rounded bg-[#0A0B15] text-zinc-200" rows="2" placeholder="Short summary"></textarea>
+        </div>
+        <div id="urlField">
+          <label class="block text-sm mb-1 text-zinc-200">Url Slug</label>
+          <input id="url" class="w-full p-2 rounded bg-[#0A0B15] text-zinc-200" placeholder="my-post-slug">
+        </div>
+        <div>
+          <label class="block text-sm mb-1 text-zinc-200">Scheduled Release Date</label>
+          <input id="scheduledAt" type="datetime-local" class="cursor-pointer w-full p-2 rounded bg-[#0A0B15] text-zinc-200">
+        </div>                                                      
+        <div id="dropdownsField">
+  <label class="block text-sm mb-1 text-zinc-200 flex items-center justify-between">
+    Dropdowns
+    <button id="editChangelogBtn" type="button" class="ml-2 bg-purple-700 hover:bg-purple-800 text-white px-4 py-2 rounded-full font-semibold shadow-lg focus:outline-none focus:ring-4 focus:ring-purple-500 focus:ring-opacity-75 focus:ring-offset-2 transition">Edit Changelog Entries</button>
+  </label>
+  <input id="dropdowns" type="hidden">
+</div>
+<!-- Changelog Dropdown Editor Modal -->
+<div id="changelogModal" class="fixed inset-0 z-50 flex items-center justify-center hidden">
+  <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+  <div class="relative rounded-2xl shadow-2xl bg-[#18192A] p-10 w-[95vw] max-w-6xl mx-auto flex flex-col max-h-[95vh] overflow-y-auto">
+    <h2 class="text-3xl font-bold mb-4 text-center text-zinc-100">Edit Changelog Entries</h2>
+    <div id="changelogEntriesList"></div>
+    <button id="addChangelogEntry" type="button" class="mt-4 px-4 py-2 rounded-full bg-purple-700 hover:bg-purple-800 text-white font-semibold shadow-lg transition">+ Add Entry</button>
+    <div class="flex gap-4 mt-8">
+      <button id="saveChangelogEntries" type="button" class="flex-1 px-4 py-2 rounded-full bg-green-600 hover:bg-green-700 text-white font-semibold shadow-lg transition">Save</button>
+      <button id="cancelChangelogEntries" type="button" class="flex-1 px-4 py-2 rounded-full bg-gray-500 hover:bg-gray-600 text-white font-semibold shadow-lg transition">Cancel</button>
+    </div>
+  </div>
+</div>
+
+        <div id="authorField">
+          <label class="block text-sm mb-1 text-zinc-200">Author</label>
+          <input id="author" class="w-full p-2 rounded bg-[#0A0B15] text-zinc-200" placeholder="Author name">
+        </div>
+        <!-- Tag Editor -->
+        <div id="tagsField">
+          <label class="block text-sm mb-1 text-zinc-200">Tags</label>
+          <div id="tagsList" class="flex flex-wrap gap-2 mb-2"></div>
+          <div class="flex gap-2 items-center">
+            <input id="tagNameInput" class="p-2 rounded bg-[#0A0B15] text-zinc-200" placeholder="Tag name" maxlength="20">
+            <input id="tagColorInput" type="color" value="#6366f1" class="w-8 h-8 border-none rounded">
+            <button id="addTagBtn" type="button" class="bg-purple-700 hover:bg-purple-800 text-white px-3 py-1 rounded font-semibold">Add Tag</button>
+          </div>
+        </div>
+        <div class="flex gap-4 mt-4">
+          <div id="thumbnailDrop" class="flex-1 flex flex-col items-center justify-center p-4 bg-[#0A0B15] rounded-xl border-2 border-dashed border-zinc-700 cursor-pointer">
+            <img src="Upload.svg" class="h-8 w-8 text-zinc-400 mb-2" />
+            <button type="button" class="thumbnail-upload text-zinc-200">Upload Thumbnail</button>
+          </div>
+          <div id="imageDrop" class="flex-1 flex flex-col items-center justify-center p-4 bg-[#0A0B15] rounded-xl border-2 border-dashed border-zinc-700 cursor-pointer">
+            <img src="Upload.svg" class="h-8 w-8 text-zinc-400 mb-2" />
+            <button type="button" class="image-upload text-zinc-200">Upload Image</button>
+          </div>
+        </div>
+      </div>
+      <button id="closeSettings" class="cursor-pointer bg-zinc-700 text-zinc-200 hover:bg-zinc-600 px-8 py-2 rounded-full font-semibold shadow-lg shadow-zinc-500/50 animate-none hover:animate-pulse transition text-xl focus:outline-none focus:ring-4 focus:ring-zinc-500 focus:ring-opacity-75 focus:ring-offset-2">Close</button>
+    </div>
+  </div>
+
+  <script>
+    // Modal logic
+    const settingsModal = document.getElementById('settingsModal');
+
+    // --- Tag Editor Logic ---
+    window.currentTags = [];
+    const tagsList = document.getElementById('tagsList');
+    const tagNameInput = document.getElementById('tagNameInput');
+    const tagColorInput = document.getElementById('tagColorInput');
+    const addTagBtn = document.getElementById('addTagBtn');
+
+    function renderTags() {
+      tagsList.innerHTML = '';
+      window.currentTags.forEach((tag, i) => {
+        const tagEl = document.createElement('span');
+        tagEl.className = 'flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium';
+        tagEl.style.backgroundColor = tag.color;
+        tagEl.style.color = '#fff';
+        tagEl.innerHTML = `${tag.name} <button type="button" class="ml-1 text-xs text-white bg-black/30 rounded-full px-1" title="Remove">&times;</button>`;
+        tagEl.querySelector('button').onclick = () => {
+          window.currentTags.splice(i, 1);
+          renderTags();
+        };
+        tagsList.appendChild(tagEl);
+      });
+    }
+    addTagBtn.onclick = () => {
+      const name = tagNameInput.value.trim();
+      const color = tagColorInput.value;
+      if (!name) return;
+      window.currentTags.push({ name, color });
+      tagNameInput.value = '';
+      renderTags();
+    };
+    // Optional: Enter key adds tag
+    tagNameInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter') addTagBtn.click();
+    });
+    // --- End Tag Editor Logic ---
+
+    // Fetch and populate session metadata if session id is present
+    (async function fetchSessionMetadata() {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('id');
+      if (!sessionId) return;
+      try {
+        const res = await fetch(`/api/session-metadata?sessionId=${encodeURIComponent(sessionId)}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        // Populate fields from new API structure
+        const post = data.post || {};
+        if (post.title) document.getElementById('title').value = post.title;
+        if (post.summary) document.getElementById('summary').value = post.summary;
+        if (post.url) document.getElementById('url').value = post.url;
+        if (post.scheduledAt) document.getElementById('scheduledAt').value = post.scheduledAt;
+        if (post.dropdowns) document.getElementById('dropdowns').value = Array.isArray(post.dropdowns) ? JSON.stringify(post.dropdowns) : post.dropdowns;
+
+        if (post.author) document.getElementById('author').value = post.author;
+        if (post.thumbnail) document.getElementById('thumbnail').value = post.thumbnail;
+        if (post.image) document.getElementById('image').value = post.image;
+        if (post.content) editor.value = post.content;
+        // Restore tags if present
+        if (Array.isArray(post.tags)) {
+          window.currentTags = post.tags.map(tag => {
+            // Accept both string tags and {name, color} objects
+            if (typeof tag === 'string') {
+                return { name: tag, color: '#6366f1' };
+            } else if (typeof tag === 'object' && tag !== null) {
+              return {
+                name: tag.name || '',
+                color: tag.color || '#6366f1'
+              };
+            }
+            return null;
+          }).filter(Boolean);
+          if (typeof renderTags === 'function') renderTags();
+        }
+
+        window.currentPostType = data.postType || data.type || 'blog';
+        // Hide/show fields based on type
+        updateSettingsFields(data.postType || data.type || 'blog');
+      if (typeof updatePreview === 'function') updatePreview();
+    } catch (e) { /* ignore */ }
+    })();
+
+    // Hide/show settings fields based on type
+    function updateSettingsFields(type) {
+      // blog: hide dropdowns
+      // changelog: hide author and url
+      document.getElementById('dropdownsField').style.display = (type === 'blog') ? 'none' : '';
+      document.getElementById('authorField').style.display = (type === 'changelog') ? 'none' : '';
+      document.getElementById('urlField').style.display = (type === 'changelog') ? 'none' : '';
+    }
+
+    // Listen for type changes if type input exists
+    const typeInput = document.getElementById('type');
+    if (typeInput) {
+      typeInput.addEventListener('change', e => updateSettingsFields(e.target.value));
+    }
+    document.getElementById('settingsBtn').onclick = () => settingsModal.classList.remove('hidden');
+    document.getElementById('closeSettings').onclick = () => settingsModal.classList.add('hidden');
+    settingsModal.querySelector('.absolute').onclick = () => settingsModal.classList.add('hidden');
+
+    // True WYSIWYG Post Live Preview
+    const editor = document.getElementById('editor');
+    const postPreview = document.getElementById('post-preview');
+    const md = window.markdownit();
+    function getPreviewFields() {
+      return {
+        title: document.getElementById('title')?.value || 'Untitled',
+        summary: document.getElementById('summary')?.value || '',
+        image: document.getElementById('thumbnail')?.value || '/images/post-header.png',
+        content: editor.value || '',
+        author: document.getElementById('author')?.value || 'Unknown',
+        date: (document.getElementById('scheduledAt')?.value || new Date().toISOString()).split('T')[0],
+        tags: (window.currentTags && window.currentTags.length > 0) ? window.currentTags : [],
+        dropdowns: JSON.parse(document.getElementById('dropdowns')?.value || '[]')
+      };
+    }
+
+    function waitPostPreview() {
+      if (window.currentPostType != undefined) {
+        renderPostPreview();
+      } else {
+        setTimeout(waitPostPreview, 100);
+      }
+    }
+
+    function renderPostPreview() {
+      const {title, summary, image, content, author, date, tags, dropdowns} = getPreviewFields();
+      console.log(window.currentPostType);
+      if (window.currentPostType === 'changelog') {
+        postPreview.innerHTML = `
+          <div class="changelog-preview-section flex items-center justify-center h-full w-full" style="min-height:60vh;">
+                <div class="relative rounded-2xl shadow-lg max-w-2xl w-full mb-8 overflow-hidden bg-[#111122]">
+              <img src="${image || '/images/default-changelog.png'}" alt="Changelog Card" class="w-full h-auto object-cover min-h-[220px]" />
+              <div class="absolute top-0 left-0 flex gap-2 p-4 z-10">
+                ${(tags || []).map(tag => `<span class="px-2 py-0.5 rounded-full text-xs font-normal" style="background-color: ${tag.color || '#6366f1'}; color: #fff;">${tag.name}</span>`).join('')}
+              </div>
+              <div class="absolute top-0 right-0 flex gap-2 p-4 z-10">
+                <span class="bg-[#111122] text-xs text-white font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                  <img src="/images/all.png" alt="flavor" class="h-4 w-4 object-contain" /> Flavor
+                </span>
+              </div>
+              <div class="relative z-10 p-8 pt-6 bg-[#111122] bg-opacity-95 rounded-b-2xl">
+                <div class="text-white text-xl font-bold mb-2">${title}</div>
+                <div class="text-gray-400 text-sm mb-4">v0.0.0 | ${date}</div>
+                <div class="text-gray-200 mb-4">${summary}</div>
+                ${dropdowns.map(drop => {
+                  let markdownContent = '';
+                  if (Array.isArray(drop.content)) {
+                    markdownContent = drop.content.map(item => (md ? md.render(item) : `<li>${item}</li>`)).join('');
+                  } else if (typeof drop.content === 'string') {
+                    markdownContent = md ? md.render(drop.content) : `<li>${drop.content}</li>`;
+                  } else if (drop.content && typeof drop.content === 'object') {
+                    markdownContent = md ? md.render(JSON.stringify(drop.content)) : `<li>${JSON.stringify(drop.content)}</li>`;
+                  } else {
+                    markdownContent = md ? md.render('No details provided.') : '<li>No details provided.</li>';
+                  }
+                  return `
+                    <div class="mb-4 p-3 bg-[#19192c] rounded-xl">
+                      <button class="changelog-toggle w-full text-white font-semibold mb-1 cursor-pointer focus:outline-none flex items-center justify-between" data-target="${drop.title}">
+                        <span class="flex items-center gap-2">
+                          <img class="w-4 h-4 text-white" src="/images/${drop.icon}.png"/>
+                          ${drop.title}
+                        </span>
+                        <svg class="arrow-icon w-4 h-4 ml-2 transition-transform duration-300 transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg>
+                      </button>
+                      <div class="changelog-panel overflow-hidden transition-all duration-300 ease-in-out max-h-96" data-panel="${drop.title}">
+                        <div class="dropdown-markdown markdown-body text-white">${markdownContent}</div>
+                      </div>
+                    </div>
+                  `;
+                }).join('')}
+                <div class="text-gray-400 text-xs mb-2">Contributors: ${content || 'Unknown'}</div>
+              </div>
+            </div>
+          </div>
+        `;
+      } else {
+        postPreview.innerHTML = `
+          <div class="flex flex-col w-full h-full">
+            <div class="relative flex justify-center pt-8 pb-4">
+              <div class="absolute left-0 right-0 mx-auto" style="top:0; width:100vw; height:90%; max-width:100vw; min-height:200px; z-index:0;">
+                <div style="position:absolute; inset:0; background-image:url('${image}'); background-size:cover; background-position:center; filter:brightness(0.7);"></div>
+                <div style="position:absolute; inset:0; background:linear-gradient(to bottom, rgba(34,33,43,0.35) 0%, rgba(17, 17, 34, 1) 100%);"></div>
+              </div>
+              <div class="w-full px-6 xl:px-0">
+                <div class="relative max-w-6xl mx-auto aspect-[5/2.13] flex items-center justify-center" style="z-index:1;">
+                  <img src="${image}" alt="Post header image" class="rounded-2xl shadow-xl object-cover w-full h-full border-4 border-[#18192A]" style="background:#18192A;" />
+                </div>
+              </div>
+            </div>
+            <main class="flex-1 flex flex-col items-center w-full mb-6">
+              <div class="w-full px-6 xl:px-0">
+                <div class="max-w-6xl mx-auto flex flex-col md:flex-row md:items-start gap-8">
+                  <div class="flex-1 min-w-0">
+                    <h1 class="text-5xl font-extrabold text-white mb-2 mt-6 md:mt-0">${title}</h1>
+                    <div class="text-lg md:text-xl text-gray-100 mb-4">${summary}</div>
+                    <div id="preview" class="text-gray-300 text-sm mb-8" style="min-height:120px;">
+                      ${md.render(content)}
+                    </div>
+                  </div>
+                  <aside class="w-full md:w-64 flex-shrink-0 mb-6 md:mb-0 md:mt-12">
+                    <dl class="text-sm text-gray-300 mb-2">
+                      <dt class="font-bold">Published</dt>
+                      <dd>${date}</dd>
+                      <dt class="font-bold mt-2">Author</dt>
+                      <dd>${author}</dd>
+                      <dt class="font-bold mt-2">Tags</dt>
+                    </dl>
+                    <div class="flex flex-wrap gap-2 mt-2">
+                      ${tags.map(tag => `<span class="px-2 py-0.5 rounded-full text-xs font-semibold text-white" style="background-color:${tag.color || '#6366f1'}">${tag.name || tag}</span>`).join('')}
+                    </div>
+                  </aside>
+                </div>
+              </div>
+            </main>
+          </div>
+        `;
+      }
+    }
+    // Update preview on all relevant input changes
+    ['input','change'].forEach(evt => {
+      document.getElementById('title').addEventListener(evt, waitPostPreview);
+      document.getElementById('summary').addEventListener(evt, waitPostPreview);
+      editor.addEventListener(evt, waitPostPreview);
+      if (document.getElementById('dropdowns')) document.getElementById('dropdowns').addEventListener(evt, waitPostPreview);
+      if (document.getElementById('scheduledAt')) document.getElementById('scheduledAt').addEventListener(evt, waitPostPreview);
+    });
+    // Also update on tag changes
+    window.renderTags = (function(orig){
+      return function() {
+        orig && orig.apply(this, arguments);
+        waitPostPreview();
+      }
+    })(window.renderTags);
+    // Initial render
+    waitPostPreview();
+
+    // Toast notification helper
+    function showToast(message) {
+      const toast = document.createElement('div');
+      toast.textContent = message;
+      toast.className = 'fixed bottom-4 right-4 bg-zinc-700 text-white px-4 py-2 rounded shadow-lg';
+      document.body.appendChild(toast);
+      setTimeout(() => document.body.removeChild(toast), 3000);
+    }
+
+    // File upload logic
+    const thumbnailInput = document.createElement('input');
+    thumbnailInput.type = 'file'; thumbnailInput.accept = 'image/*'; thumbnailInput.id = 'thumbnailInput'; thumbnailInput.classList.add('hidden');
+    document.body.appendChild(thumbnailInput);
+    const imageInput = document.createElement('input');
+    imageInput.type = 'file'; imageInput.accept = 'image/*'; imageInput.id = 'imageInput'; imageInput.classList.add('hidden');
+    document.body.appendChild(imageInput);
+    const thumbnailBtn = document.querySelector('.thumbnail-upload');
+    const imageBtn = document.querySelector('.image-upload');
+    const thumbnailContainer = document.getElementById('thumbnailDrop');
+    const imageContainer = document.getElementById('imageDrop');
+    thumbnailBtn.onclick = () => thumbnailInput.click();
+    imageBtn.onclick = () => imageInput.click();
+    thumbnailContainer.onclick = () => thumbnailInput.click();
+    imageContainer.onclick = () => imageInput.click();
+    // drag & drop handlers
+    [thumbnailContainer, imageContainer].forEach(container => {
+      container.addEventListener('dragover', e => { e.preventDefault(); container.classList.add('bg-zinc-600'); });
+      container.addEventListener('dragleave', () => container.classList.remove('bg-zinc-600'));
+    });
+    thumbnailContainer.addEventListener('drop', async e => {
+      e.preventDefault(); thumbnailContainer.classList.remove('bg-zinc-600');
+      const file = e.dataTransfer.files[0]; if (!file) return;
+      const url = await uploadFile(file);
+      document.getElementById('thumbnail').value = url;
+      waitPostPreview();
+    });
+    imageContainer.addEventListener('drop', async e => {
+      e.preventDefault(); imageContainer.classList.remove('bg-zinc-600');
+      const file = e.dataTransfer.files[0]; if (!file) return;
+      const url = await uploadFile(file);
+      document.getElementById('image').value = url;
+      navigator.clipboard.writeText(url);
+      showToast('Image URL copied to clipboard');
+    });
+    async function uploadFile(file) {
+      // Send raw file as body, include filename and sessionId query params
+      const filenameParam = encodeURIComponent(file.name);
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('id');
+      let endpoint = `/api/upload?filename=${filenameParam}`;
+      if (sessionId) endpoint += `&sessionId=${encodeURIComponent(sessionId)}`;
+      const res = await fetch(endpoint, { method: 'POST', body: file });
+      if (!res.ok) {
+        showToast('Upload failed: ' + res.statusText);
+        return null;
+      }
+      const json = await res.json();
+      if (!json.url) {
+        showToast('Upload failed: no URL returned');
+        return null;
+      }
+      return json.url;
+    }
+    thumbnailInput.onchange = async () => {
+      const file = thumbnailInput.files[0]; if (!file) return;
+      const url = await uploadFile(file);
+      document.getElementById('thumbnail').value = url;
+      waitPostPreview();
+    };
+    imageInput.onchange = async () => {
+      const file = imageInput.files[0]; if (!file) return;
+      const url = await uploadFile(file);
+      document.getElementById('image').value = url;
+      navigator.clipboard.writeText(url);
+      showToast('Image URL copied to clipboard');
+    };
+
+    // Publish logic (uses modal fields)
+    document.getElementById('publishBtn').onclick = () => {
+      const params = new URLSearchParams(window.location.search);
+      const sessionId = params.get('id');
+      const tags = document.getElementById('tags')?.value?.split(',').map(s => s.trim()).filter(Boolean) || [];
+      let dropdowns;
+      try { dropdowns = JSON.parse(document.getElementById('dropdowns').value); }
+      catch { console.log('Failed to parse dropdowns'); dropdowns = []; }
+      const type = document.getElementById('type')?.value || 'blog';
+      const payload = {
+        sessionId,
+        type,
+        title: document.getElementById('title').value,
+        summary: document.getElementById('summary').value,
+        tags,
+        thumbnail: document.getElementById('thumbnail')?.value,
+        image: document.getElementById('image')?.value,
+        content: editor.value,
+        createdAt: document.getElementById('scheduledAt').value || new Date().toISOString(),
+        dropdowns
+      };
+      // Only include fields allowed for this type
+      if (type !== 'changelog') payload.url = document.getElementById('url').value;
+      if (type !== 'blog') payload.dropdowns = dropdowns;
+
+      // Add tags to payload
+      payload.tags = window.currentTags || [];
+
+      if (type !== 'changelog') payload.author = document.getElementById('author').value;
+      if (document.getElementById('changelog')) payload.changelog = document.getElementById('changelog').value;
+      console.log('Submitting payload:', payload);
+      fetch('/api/editor/submit', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.error) {
+          showErrorModal(data.error);
+        } else {
+          showPublishModal(data.url);
+        }
+      })
+      .catch(async err => {
+        // Try to parse error response
+        if (err instanceof Response) {
+          try {
+            const json = await err.json();
+            if (json.error) {
+              showErrorModal(json.error);
+              return;
+            }
+          } catch {}
+        }
+        showErrorModal('An unknown error occurred.');
+      });
+    };
+
+    // Error modal logic
+    function showErrorModal(msg) {
+      let modal = document.getElementById('errorModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'errorModal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
+        modal.innerHTML = `
+          <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+          <div class="relative bg-[#111122] rounded-2xl shadow-2xl p-8 w-full max-w-md mx-auto flex flex-col items-center">
+            <h2 class="text-2xl font-bold mb-4 text-center text-red-400">Error</h2>
+            <p class="mb-6 text-zinc-100">${msg}</p>
+            <button id="closeErrorModal" class="cursor-pointer bg-zinc-700 text-zinc-200 hover:bg-zinc-600 px-8 py-2 rounded-full font-semibold shadow-lg shadow-zinc-500/50 animate-none hover:animate-pulse transition text-xl focus:outline-none focus:ring-4 focus:ring-zinc-500 focus:ring-opacity-75 focus:ring-offset-2">Close</button>
+          </div>`;
+        document.body.appendChild(modal);
+        document.getElementById('closeErrorModal').onclick = () => modal.remove();
+      } else {
+        modal.querySelector('p').textContent = msg;
+        modal.classList.remove('hidden');
+      }
+    }
+
+    // Publish modal logic
+    function showPublishModal(url) {
+      let modal = document.getElementById('publishModal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'publishModal';
+        modal.className = 'fixed inset-0 z-50 flex items-center justify-center';
+        modal.innerHTML = `
+          <div class="absolute inset-0 bg-black/80 backdrop-blur-sm"></div>
+          <div class="relative bg-[#111122] rounded-2xl shadow-2xl p-8 w-full max-w-md mx-auto flex flex-col items-center">
+            <h2 class="text-2xl font-bold mb-4 text-center text-zinc-100">Post Published!</h2>
+            <p class="mb-6 text-zinc-100">Your post is live at:</p>
+            <a id="postUrlBtn" href="${url}" target="_blank" class="mb-6 bg-purple-700 hover:bg-purple-800 text-white px-6 py-2 rounded-full font-semibold shadow-lg transition text-lg">Open Post</a>
+            <button id="closePublishModal" class="cursor-pointer bg-zinc-700 text-zinc-200 hover:bg-zinc-600 px-8 py-2 rounded-full font-semibold shadow-lg shadow-zinc-500/50 animate-none hover:animate-pulse transition text-xl focus:outline-none focus:ring-4 focus:ring-zinc-500 focus:ring-opacity-75 focus:ring-offset-2">Close</button>
+          </div>`;
+        document.body.appendChild(modal);
+        document.getElementById('closePublishModal').onclick = () => modal.remove();
+      } else {
+        modal.querySelector('#postUrlBtn').href = url;
+        modal.classList.remove('hidden');
+      }
+    }
+  </script>
+<script>
+// --- Changelog Dropdown Editor Modal Logic ---
+document.addEventListener('DOMContentLoaded', function() {
+  const changelogBtn = document.getElementById('editChangelogBtn');
+  const changelogModal = document.getElementById('changelogModal');
+  const changelogEntriesList = document.getElementById('changelogEntriesList');
+  const addChangelogEntryBtn = document.getElementById('addChangelogEntry');
+  const saveChangelogEntriesBtn = document.getElementById('saveChangelogEntries');
+  const cancelChangelogEntriesBtn = document.getElementById('cancelChangelogEntries');
+  const dropdownsInput = document.getElementById('dropdowns');
+  let changelogEntries = [];
+
+  function renderChangelogEntries() {
+  changelogEntriesList.innerHTML = '';
+  changelogEntries.forEach((entry, idx) => {
+    const card = document.createElement('div');
+    card.className = 'changelog-entry-card bg-[#22223A] rounded-lg p-4 mb-4 flex flex-col gap-2 relative';
+    card.draggable = true;
+    card.setAttribute('data-idx', idx);
+    card.innerHTML = `
+      <div class="flex gap-2 items-center mb-2">
+        <span class="drag-handle text-gray-400 mr-2 cursor-grab" title="Drag to reorder">↕️</span>
+        <input type="text" class="icon-input w-28 text-center text-xl bg-[#1f2035] text-white rounded mr-2" placeholder="Icon" value="${entry.icon || ''}" maxlength="5" />
+        <input type="text" class="title-input flex-1 px-2 py-1 rounded bg-[#1f2035] text-white font-semibold" placeholder="Title" value="${entry.title || ''}" />
+        <button type="button" class="remove-entry ml-2 text-red-400 hover:text-red-600" title="Remove">✕</button>
+      </div>
+      <div class="flex flex-col md:flex-row gap-4">
+        <textarea class="content-input w-full md:w-1/2 rounded bg-[#1f2035] text-white p-2 mt-1 font-mono resize-y" rows="6" placeholder="Markdown body" style="resize:vertical; min-height:6em;">${entry.content || ''}</textarea>
+        <div id="preview" class="w-full md:w-1/2 bg-[#111122] rounded p-2 mt-1 min-h-[6em] overflow-y-auto text-sm prose prose-invert preview-box" style="min-height:6em;"></div>
+      </div>
+    `;
+    // Remove entry
+    card.querySelector('.remove-entry').onclick = () => {
+      changelogEntries.splice(idx, 1);
+      renderChangelogEntries();
+    };
+    // Update icon/title/content on input
+    card.querySelector('.icon-input').oninput = e => { changelogEntries[idx].icon = e.target.value; };
+    card.querySelector('.title-input').oninput = e => { changelogEntries[idx].title = e.target.value; };
+    const contentInput = card.querySelector('.content-input');
+    const previewBox = card.querySelector('.preview-box');
+    function syncPreviewHeight() {
+      previewBox.style.height = contentInput.offsetHeight + 'px';
+    }
+    function updatePreview() {
+      previewBox.innerHTML = window.markdownit().render(contentInput.value);
+      changelogEntries[idx].content = contentInput.value;
+      syncPreviewHeight();
+    }
+    contentInput.oninput = updatePreview;
+    contentInput.onmouseup = syncPreviewHeight;
+    contentInput.onkeyup = syncPreviewHeight;
+    contentInput.onchange = syncPreviewHeight;
+    // For manual resizing
+    contentInput.addEventListener('input', syncPreviewHeight);
+    contentInput.addEventListener('mouseup', syncPreviewHeight);
+    contentInput.addEventListener('keyup', syncPreviewHeight);
+    contentInput.addEventListener('change', syncPreviewHeight);
+    // Initial sync
+    updatePreview();
+    changelogEntriesList.appendChild(card);
+    // Force preview height to match textarea on first render
+    syncPreviewHeight();
+  });
+  enableChangelogDragAndDrop();
+}
+// HTML5 drag-and-drop for sorting
+function enableChangelogDragAndDrop() {
+  let dragSrcIdx = null;
+  document.querySelectorAll('#changelogEntriesList .changelog-entry-card').forEach((card, idx) => {
+    card.ondragstart = e => {
+      dragSrcIdx = idx;
+      card.style.opacity = '0.5';
+      e.dataTransfer.effectAllowed = 'move';
+    };
+    card.ondragend = e => {
+      card.style.opacity = '';
+    };
+    card.ondragover = e => {
+      e.preventDefault();
+      card.style.border = '2px dashed #a78bfa';
+    };
+    card.ondragleave = e => {
+      card.style.border = '';
+    };
+    card.ondrop = e => {
+      e.preventDefault();
+      card.style.border = '';
+      const targetIdx = idx;
+      if (dragSrcIdx !== null && dragSrcIdx !== targetIdx) {
+        const [moved] = changelogEntries.splice(dragSrcIdx, 1);
+        changelogEntries.splice(targetIdx, 0, moved);
+        renderChangelogEntries();
+      }
+      dragSrcIdx = null;
+    };
+  });
+}
+
+changelogBtn.onclick = () => {
+  // Load from dropdowns field if valid JSON
+  try {
+    const arr = JSON.parse(dropdownsInput.value);
+    changelogEntries = Array.isArray(arr) ? arr : [];
+  } catch { changelogEntries = []; }
+  renderChangelogEntries();
+  changelogModal.classList.remove('hidden');
+  changelogModal.classList.add('flex');
+};
+addChangelogEntryBtn.onclick = () => {
+  changelogEntries.push({ icon: '', title: '', content: '' });
+  renderChangelogEntries();
+};
+saveChangelogEntriesBtn.onclick = () => {
+  // Validate
+  for (const entry of changelogEntries) {
+    if (!(entry.icon && entry.title && entry.content)) {
+      showChangelogErrorModal('Please fill out icon, title, and content for all entries.');
+      return;
+    }
+  }
+  dropdownsInput.value = JSON.stringify(changelogEntries);
+  changelogModal.classList.add('hidden');
+  waitPostPreview();
+};
+cancelChangelogEntriesBtn.onclick = () => {
+  changelogModal.classList.add('hidden');
+};
+// Close modal on backdrop click
+changelogModal.querySelector('.absolute').onclick = () => {
+  changelogModal.classList.add('hidden');
+  changelogModal.classList.remove('flex');
+};
+// --- End Changelog Dropdown Editor Modal Logic ---
+});
+</script>
+</body>
+</html>

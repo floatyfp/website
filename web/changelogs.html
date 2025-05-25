@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Floaty Changelogs</title>
+  <link href="/tailwind.output.css" rel="stylesheet">
+  <link href="/fonts.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
+  <style>
+    .disabled-btn:disabled, .disabled-btn[aria-disabled="true"] {
+      opacity: 0.4 !important;
+      background: #181828 !important;
+      color: #aaa !important;
+      cursor: not-allowed !important;
+      filter: grayscale(0.2);
+    }
+    .changelog-bg {
+      position: absolute;
+      left: 0;
+      filter: brightness(0.6);
+      top: -35vh;
+      width: 100vw;
+      height: 100vh;
+      z-index: -1;
+      background-image: url('/images/downloadbackground.png');
+      background-size: cover;
+      background-repeat: no-repeat;
+      background-position: center top;
+      pointer-events: none;
+      opacity: 1;
+    }
+    /* Markdown styling for dropdowns */
+    .dropdown-markdown h1 {
+      color: #f1f5f9;
+      font-size: 2.5rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    .dropdown-markdown h2 {
+      color: #f1f5f9;
+      font-size: 2rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    .dropdown-markdown h3 {
+      color: #f1f5f9;
+      font-size: 1.5rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    .dropdown-markdown h4 {
+      color: #f1f5f9;
+      font-size: 1.25rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    .dropdown-markdown h5 {
+      color: #f1f5f9;
+      font-size: 1.1rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    .dropdown-markdown h6 {
+      color: #f1f5f9;
+      font-size: 1rem;
+      margin-top: 0.2em;
+      margin-bottom: 0.2em;
+      font-weight: bold;
+    }
+    .dropdown-markdown p {
+      color: #e5e7eb;
+      margin-bottom: 1em;
+    }
+    .dropdown-markdown strong {
+      font-weight: bold;
+      color: inherit;
+    }
+    .dropdown-markdown img {
+      padding-top: 0.5em;
+      padding-bottom: 0.5em;
+    }
+    .dropdown-markdown em {
+      font-style: italic;
+      color: inherit;
+    }
+    .dropdown-markdown ul, .dropdown-markdown ol { color: #e5e7eb; margin-left: 1.5em; }
+    .dropdown-markdown code { background: #111122; color: #f472b6; padding: 2px 6px; border-radius: 4px; }
+    .dropdown-markdown pre { background: #111122; color: #f472b6; padding: 1em; border-radius: 8px; overflow-x: auto; }
+    .dropdown-markdown blockquote { color: #a5b4fc; border-left: 4px solid #6366f1; padding-left: 1em; margin: 1em 0; }
+  </style>
+</head>
+<script>
+window.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.changelog-toggle').forEach(button => {
+    const panel = document.querySelector(`[data-panel="${button.dataset.target}"]`);
+    const arrow = button.querySelector('.arrow-icon');
+    
+    button.addEventListener('click', () => {
+      const isOpen = panel.style.maxHeight && panel.style.maxHeight !== '0px';
+
+      if (isOpen) {
+        panel.style.maxHeight = '0px';
+        arrow.classList.remove('rotate-180');
+      } else {
+        panel.style.maxHeight = panel.scrollHeight + 'px';
+        arrow.classList.add('rotate-180');
+      }
+    });
+  });
+
+  // Collapse all panels by default
+  document.querySelectorAll('.changelog-panel').forEach(panel => {
+    panel.style.maxHeight = '0px';
+  });
+});
+</script>
+<body class="min-h-screen w-full bg-[#0A0B15] flex flex-col overflow-x-hidden">
+  <div class="changelog-bg"></div>
+  <div id="navbar-placeholder"></div>
+  <script>
+    fetch('/navbar.html')
+      .then(response => response.text())
+      .then(data => {
+        document.getElementById('navbar-placeholder').innerHTML = data;
+        const script = document.createElement('script');
+        script.src = '/navbar.js';
+        document.body.appendChild(script);
+      });
+  </script>
+  <main class="flex-1 flex flex-col items-center justify-center w-full pt-18 pb-8">
+    <h1 class="text-white text-5xl font-extrabold mb-10 text-center">Floaty Changelogs</h1>
+    <!-- Release Channel Selector Bar -->
+    <div class="flex justify-center mb-12">
+      <div class="flex flex-wrap bg-[#111122] rounded-[15px] px-1.75 py-1.75 gap-1.5 shadow-lg">
+        <button id="changelog-btn-all" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] bg-[#64009E] text-white shadow active" aria-pressed="true"><img src="images/all.png" alt="All" class="h-5 w-5 object-contain" /> All</button>
+        <button id="changelog-btn-release" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] text-white/80 hover:text-white" aria-pressed="false"><img src="images/release.png" alt="Release" class="h-5 w-5 object-contain" /> Release</button>
+        <button id="changelog-btn-beta" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] text-white/80 hover:text-white" aria-pressed="false"><img src="images/beta.png" alt="Beta" class="h-5 w-5 object-contain" /> Beta</button>
+        <button id="changelog-btn-nightly" class="flex items-center gap-1.5 px-4 py-1.5 rounded-xl font-medium text-base transition-all focus:outline-none focus:ring-2 focus:ring-[#64009E] text-white/80 hover:text-white" aria-pressed="false"><img src="images/nightly.png" alt="Nightly" class="h-5 w-5 object-contain" /> Nightly</button>
+      </div>
+    </div>
+    <!-- Changelog List (dynamic) -->
+    <div id="changelog-list" class="flex flex-col items-center w-full"></div>
+    <script type="module" src="/changelogs.js"></script>
+  </main>
+  <div id="footer-container"></div>
+  <script>
+    fetch('/footer.html')
+      .then(res => res.text())
+      .then(html => {
+        document.getElementById('footer-container').innerHTML = html;
+      });
+  </script>
+</body>
+</html>

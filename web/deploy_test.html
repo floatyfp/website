@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Test Deploy API</title>
+  <style>
+    body { font-family: sans-serif; background: #181825; color: #f1f5f9; }
+    input, textarea, button { margin: 8px 0; padding: 8px; border-radius: 4px; border: 1px solid #444; background: #22223b; color: #f1f5f9; }
+    label { display: block; margin-top: 16px; }
+    .container { max-width: 480px; margin: 40px auto; background: #232347; padding: 32px; border-radius: 16px; box-shadow: 0 4px 24px #0006; }
+    .result { margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Test Deploy API</h2>
+      <label>API Password <input type="password" id="password" required></label>
+      <label>Upload ZIP File <input type="file" id="zipfile" accept=".zip" required></label>
+      <div style="color:#ffb4b4;background:#222;padding:8px;border-radius:6px;margin:8px 0;">
+        <strong>Note:</strong><br>
+        The ZIP <b>must</b> contain an <code>info.json</code> file at the root with the structure shown below.<br>
+        <em>This page does <b>not</b> generate or upload info.json separately.</em>
+      </div>
+      <button id="deployBtn">Send Deploy</button>
+      <div style="margin-top:20px;">
+        <strong>Example info.json:</strong>
+        <pre style="background:#232347;padding:10px;border-radius:8px;max-height:200px;overflow:auto;">{
+  "version": "1.2.3",
+  "flavor": "release",
+  "platforms": [
+    {
+      "platform": "windows",
+      "files": [
+        { "type": "innosetup", "path": "windows/innosetup_installer.exe" },
+        { "type": "msix", "path": "windows/msix_installer.msix" }
+      ]
+    },
+    {
+      "platform": "mac",
+      "files": [
+        { "type": "dmg", "path": "mac/app_installer.dmg" }
+      ]
+    }
+  ]
+}</pre>
+      </div>
+      <div class="result" id="result"></div>
+    </div>
+  </div>
+  <script>
+    document.getElementById('deployBtn').onclick = async function(e) {
+      e.preventDefault();
+      const password = document.getElementById('password').value;
+      const zipfile = document.getElementById('zipfile').files[0];
+      const result = document.getElementById('result');
+      if (!zipfile) {
+        result.textContent = 'Please select a ZIP file.';
+        return;
+      }
+      result.textContent = 'Uploading...';
+      const formData = new FormData();
+      formData.append('artifact', zipfile);
+      try {
+        const res = await fetch('/api/deploy', {
+          method: 'POST',
+          headers: { 'x-api-key': password },
+          body: formData
+        });
+        const text = await res.text();
+        result.textContent = res.ok ? `Success: ${text}` : `Error: ${text}`;
+      } catch (err) {
+        result.textContent = 'Error: ' + err;
+      }
+    }
+  </script>
+</body>
+</html>
