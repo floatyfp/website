@@ -52,16 +52,7 @@ Future<Response> getDeploymentsHandler(Request req) async {
         'platform': platform,
         'date': row['created_at'],
         'files': files,
-        'changelog': (() {
-          // Find the changelog post for this version/flavor
-          final changelogRows = DatabaseManager.db.select(
-              'SELECT url FROM posts WHERE type = ? AND version = ? AND flavor = ? LIMIT 1',
-              ['changelog', info['version'], info['flavor']]);
-          if (changelogRows.isNotEmpty && changelogRows.first['url'] != null) {
-            return '/changelog/${changelogRows.first['url']}';
-          }
-          return null;
-        })(),
+        'changelog': '/changelogs#${row['id']}'
       };
     }).toList();
     return Response.ok(jsonEncode({'deployments': deployments}),
