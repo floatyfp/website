@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:dotenv/dotenv.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_router/shelf_router.dart';
@@ -119,7 +120,10 @@ void main() async {
           })
       .addHandler(router);
 
-  var server = await shelf_io.serve(handler, InternetAddress.anyIPv4, 8080,
+  final env = DotEnv(includePlatformEnvironment: true)..load();
+
+  var server = await shelf_io.serve(
+      handler, InternetAddress.anyIPv4, int.parse(env['PORT'] ?? '8080'),
       shared: true);
   print('Serving at http://${server.address.host}:${server.port}');
 }
