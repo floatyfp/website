@@ -22,13 +22,6 @@ let currentRoute = {
   params: {}
 };
 
-// Track navigation state
-const navigationState = {
-  hasVisitedHome: sessionStorage.getItem('hasVisitedHome') === 'true',
-  currentPage: null,
-  lastReloaded: null
-};
-
 // Page specific initialization functions
 const pageInitializers = {
   home: initHomePage,
@@ -403,7 +396,7 @@ function initHomePage() {
         .then(data => {
           const posts = data.posts || [];
           return fetch('/blog-card.html').then(res => res.text()).then(templateHTML => {
-            const list = document.getElementById('blog-list');
+            const list = document.getElementById('home-blog-list');
             if (!list) return;
             
             posts.slice(0, 3).forEach(post => {

@@ -116,7 +116,7 @@
     <!-- Changelogs and Blog Posts Section -->
     <section class="w-full max-w-7xl mx-auto px-4 py-12">
       <h2 class="text-4xl font-bold text-white text-center mb-10">Changelogs and blog posts</h2>
-      <div id="blog-list" class="flex flex-wrap gap-8 justify-center"></div>
+      <div id="home-blog-list" class="flex flex-wrap gap-8 justify-center"></div>
     </section>
     <script>
       import('./blog-card-utils.js').then(mod => {
@@ -125,7 +125,7 @@
           .then(data => {
             const posts = data.posts || [];
             return fetch('/blog-card.html').then(res => res.text()).then(templateHTML => {
-              const list = document.getElementById('blog-list');
+              const list = document.getElementById('home-blog-list');
               posts.slice(0, 3).forEach(post => {
                 const temp = document.createElement('div');
                 temp.innerHTML = templateHTML;
