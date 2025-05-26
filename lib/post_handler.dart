@@ -6,13 +6,62 @@ import 'database.dart';
 
 /// Handles HTTP POST /publish to submit content using a valid session.
 Future<Response> publishHandler(Request req) async {
+  final requestId = const Uuid().v4().substring(0, 8);
+  print(
+      '[$requestId] Handling publish request: ${req.method} ${req.requestedUri}');
+  print('[$requestId] Headers: ${req.headers}');
+
   try {
-    final payload =
-        jsonDecode(await req.readAsString()) as Map<String, dynamic>;
+    final body = await req.readAsString();
+    print('[$requestId] Request body length: ${body.length}');
+
+    if (body.isEmpty) {
+      print('[$requestId] Error: Empty request body');
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Empty request body'}),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+
+    final dynamic decodedJson;
+    try {
+      decodedJson = jsonDecode(body);
+      print('[$requestId] Parsed JSON type: ${decodedJson.runtimeType}');
+      if (decodedJson is Map) {
+        print('[$requestId] JSON keys: ${decodedJson.keys.toList()}');
+      }
+    } catch (e, stackTrace) {
+      print('[$requestId] Failed to parse JSON: $e');
+      print('Stack trace: $stackTrace');
+      return Response.badRequest(
+        body: jsonEncode(
+            {'error': 'Invalid JSON format', 'details': e.toString()}),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+
+    if (decodedJson is! Map<String, dynamic>) {
+      print(
+          '[$requestId] Error: Expected Map<String, dynamic> but got ${decodedJson.runtimeType}');
+      return Response.badRequest(
+        body: jsonEncode({'error': 'Expected a JSON object'}),
+        headers: {'content-type': 'application/json'},
+      );
+    }
+
+    final payload = decodedJson;
+    print('[$requestId] Processing payload');
+    print('[$requestId] Has sessionId: ${payload.containsKey('sessionId')}');
+    print('[$requestId] Type: ${payload['type']}');
+
     final sessionId = payload['sessionId'] as String?;
     final sessionData =
         sessionId != null ? SessionManager.getData(sessionId) : null;
+
     if (sessionId == null || sessionData == null) {
+      print('[$requestId] Error: Invalid or missing session');
+      print('[$requestId] Session ID: $sessionId');
+      print('[$requestId] Session data exists: ${sessionData != null}');
       return Response.forbidden(jsonEncode({'error': 'Invalid session'}),
           headers: {'content-type': 'application/json'});
     }
@@ -20,11 +69,22 @@ Future<Response> publishHandler(Request req) async {
     final typeLower = type.toLowerCase();
 
     // Helper to check required
-    bool missing(dynamic value) =>
-        value == null ||
-        (value is String && value.trim().isEmpty) ||
-        (value is List && value.isEmpty);
+    bool missing(dynamic value) {
+      final isMissing = value == null ||
+          (value is String && value.trim().isEmpty) ||
+          (value is List && value.isEmpty);
+      return isMissing;
+    }
+
     List<String> missingFields = [];
+    print('[$requestId] Validating required fields for type: $typeLower');
+    print('[$requestId] Title present: ${payload.containsKey('title')}');
+    print('[$requestId] URL present: ${payload.containsKey('url')}');
+    print('[$requestId] Content present: ${payload.containsKey('content')}');
+    print('[$requestId] Summary present: ${payload.containsKey('summary')}');
+    print(
+        '[$requestId] Thumbnail present: ${payload.containsKey('thumbnail')}');
+    print('[$requestId] Author present: ${payload.containsKey('author')}');
 
     // Parse all possible fields
     final title = payload['title'] as String?;
@@ -63,6 +123,8 @@ Future<Response> publishHandler(Request req) async {
       // dropdowns optional
     }
     if (missingFields.isNotEmpty) {
+      print('[$requestId] Error: Missing required fields: $missingFields');
+      print('[$requestId] Post type: $typeLower');
       return Response(400,
           body: jsonEncode(
               {'error': 'Missing required fields', 'fields': missingFields}),
@@ -97,26 +159,42 @@ Future<Response> publishHandler(Request req) async {
       print('Creating post $postId: $title');
     }
     if (type == 'blog' && url != null && url.isNotEmpty) {
+      print('[$requestId] Checking for duplicate blog URL: $url');
       final slugRows = DatabaseManager.db
           .select('SELECT id FROM posts WHERE url = ?', [url]);
       final isDuplicate = slugRows.isNotEmpty &&
           (sessionData.mode != 'edit' || slugRows.first['id'] != postId);
+
       if (isDuplicate) {
+        print('[$requestId] Error: Duplicate blog URL detected');
+        print('[$requestId] URL: $url');
+        print(
+            '[$requestId] Existing ID: ${slugRows.isNotEmpty ? slugRows.first['id'] : null}');
+        print('[$requestId] Current post ID: $postId');
+        print('[$requestId] Mode: ${sessionData.mode}');
         return Response(409,
             body: jsonEncode(
                 {'error': 'A blog post with this URL slug already exists.'}),
             headers: {'content-type': 'application/json'});
+      } else {
+        print('[$requestId] No duplicate URL found');
       }
     }
     // Consume session
+    print('[$requestId] Validating session: $sessionId');
     SessionManager.validate(sessionId);
+    print('[$requestId] Session validated successfully');
 
     try {
       String versionVal = '';
       String flavorVal = '';
       int? deploymentIdVal;
+
       if (typeLower == 'changelog') {
-        print(sessionData.metadata);
+        print('[$requestId] Processing changelog post');
+        print('[$requestId] Metadata: ${sessionData.metadata}');
+        print('[$requestId] Mode: ${sessionData.mode}');
+        print('[$requestId] Post ID: $postId');
         versionVal = (sessionData.metadata != null &&
                 sessionData.metadata!['version'] != null)
             ? sessionData.metadata!['version'].toString()
@@ -132,6 +210,20 @@ Future<Response> publishHandler(Request req) async {
       }
 
       // Schedule entire post for release (do NOT delete previous changelogs)
+      print('[$requestId] Scheduling post');
+      print('[$requestId] Post ID: $postId');
+      print('[$requestId] Type: $type');
+      print('[$requestId] Title: $title');
+      print('[$requestId] URL: ${typeLower == 'changelog' ? postId : urlVal}');
+      print('[$requestId] Content length: ${contentVal.length}');
+      print('[$requestId] Has thumbnail: ${thumbnailVal.isNotEmpty}');
+      print('[$requestId] Tags count: ${tagsList?.length ?? 0}');
+      if (typeLower == 'changelog') {
+        print('[$requestId] Version: $versionVal');
+        print('[$requestId] Flavor: $flavorVal');
+        print('[$requestId] Deployment ID: $deploymentIdVal');
+      }
+
       DatabaseManager.schedulePost(
         id: postId,
         url: typeLower == 'changelog' ? postId : urlVal,
@@ -149,8 +241,19 @@ Future<Response> publishHandler(Request req) async {
         scheduledAt: createdAt,
       );
 
+      print('[$requestId] Successfully scheduled post');
+      print('[$requestId] Post ID: $postId');
+      print('[$requestId] Type: $type');
+      print('[$requestId] URL: ${typeLower == 'changelog' ? postId : urlVal}');
+
       if (typeLower == 'changelog' && deploymentIdVal != null) {
+        print('[$requestId] Marking deployment as visible');
+        print('[$requestId] Deployment ID: $deploymentIdVal');
+        print('[$requestId] Version: $versionVal');
+        print('[$requestId] Flavor: $flavorVal');
+
         DatabaseManager.markDeploymentVisible(deploymentId: deploymentIdVal);
+        print('[$requestId] Deployment marked as visible: $deploymentIdVal');
       }
     } catch (e) {
       print(e);
@@ -159,13 +262,29 @@ Future<Response> publishHandler(Request req) async {
           headers: {'content-type': 'application/json'});
     }
 
-    return Response.ok(jsonEncode({'status': 'ok', 'url': '/posts/$postId'}),
-        headers: {'content-type': 'application/json'});
-  } catch (e) {
-    print(e);
+    final responseUrl = '/posts/$postId';
+    print('[$requestId] Successfully processed request');
+    print('[$requestId] Response URL: $responseUrl');
+
+    return Response.ok(
+      jsonEncode({'status': 'ok', 'url': responseUrl}),
+      headers: {'content-type': 'application/json'},
+    );
+  } catch (e, stackTrace) {
+    print('[$requestId] Error in publishHandler: $e');
+    print('Stack trace: $stackTrace');
+
     return Response.internalServerError(
-        body: jsonEncode({'error': 'Invalid payload'}),
-        headers: {'content-type': 'application/json'});
+      body: jsonEncode({
+        'error': 'Internal server error',
+        'requestId': requestId,
+        'details': e.toString(),
+      }),
+      headers: {
+        'content-type': 'application/json',
+        'X-Request-ID': requestId,
+      },
+    );
   }
 }
 
