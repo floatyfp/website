@@ -22,6 +22,13 @@ let currentRoute = {
   params: {}
 };
 
+// Track navigation state
+const navigationState = {
+  hasVisitedHome: null,
+  currentPage: null,
+  lastReloaded: null
+};
+
 // Page specific initialization functions
 const pageInitializers = {
   home: initHomePage,
@@ -107,19 +114,6 @@ function setupNavigationListeners() {
 
 // Navigate to a specific route
 function navigateTo(url) {
-  // Check if we need to reload when navigating to blog from home
-  const isNavigatingToBlog = url === '/blog' || url.startsWith('/blog/');
-  const shouldReload = isNavigatingToBlog && navigationState.hasVisitedHome && 
-                     navigationState.currentPage === 'home' && 
-                     navigationState.lastReloaded !== 'blog';
-  
-  if (shouldReload) {
-    // Set flag to prevent infinite reloads
-    navigationState.lastReloaded = 'blog';
-    window.location.href = url;
-    return;
-  }
-  
   // Update browser history
   window.history.pushState({}, '', url);
   
@@ -397,7 +391,7 @@ function initHomePage() {
           const posts = data.posts || [];
           return fetch('/blog-card.html').then(res => res.text()).then(templateHTML => {
             const list = document.getElementById('home-blog-list');
-            if (!list) return;
+            if (!list || list.children.length > 0) return;
             
             posts.slice(0, 3).forEach(post => {
               const temp = document.createElement('div');
