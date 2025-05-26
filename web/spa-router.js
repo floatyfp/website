@@ -1,5 +1,8 @@
-// SPA Router for FloatyWeb
+// SPA Router for Floaty
 document.addEventListener('DOMContentLoaded', initRouter);
+
+// Metadata cache
+const metadataCache = {};
 
 // Page content cache
 const pageCache = {
@@ -156,6 +159,9 @@ async function handleRouteChange() {
   // Update current route
   currentRoute = { page, params };
   
+  // Clear existing metadata
+  clearMetadata();
+  
   // Show the selected page
   await showPage(page, params);
 }
@@ -287,6 +293,14 @@ async function loadHomePage(pageElement) {
     const response = await fetch('/index.html');
     const html = await response.text();
     
+    // Extract metadata from the HTML
+    if (!metadataCache.home) {
+      metadataCache.home = extractMetadata(html);
+    }
+    
+    // Apply metadata
+    applyMetadata(metadataCache.home);
+    
     // Extract content from the home page
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
@@ -301,6 +315,11 @@ async function loadHomePage(pageElement) {
     pageElement.innerHTML = content;
   } catch (error) {
     console.error('Error loading home page:', error);
+    pageElement.innerHTML = `
+    <div class="text-white text-center py-10">
+      <h2 class="text-xl font-bold mb-2">Error loading home page</h2>
+      <p class="text-gray-400">Please notify us on the Floaty Discord if this continues.</p>
+    </div>`;
   }
 }
 
@@ -424,6 +443,14 @@ async function loadBlogPage(pageElement) {
     const response = await fetch('/blog.html');
     const html = await response.text();
     
+    // Extract metadata from the HTML
+    if (!metadataCache.blog) {
+      metadataCache.blog = extractMetadata(html);
+    }
+    
+    // Apply metadata
+    applyMetadata(metadataCache.blog);
+    
     // Extract content from the blog page
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
@@ -438,6 +465,11 @@ async function loadBlogPage(pageElement) {
     pageElement.innerHTML = content;
   } catch (error) {
     console.error('Error loading blog page:', error);
+    pageElement.innerHTML = `
+    <div class="text-white text-center py-10">
+      <h2 class="text-xl font-bold mb-2">Error loading blog</h2>
+      <p class="text-gray-400">Please notify us on the Floaty Discord if this continues.</p>
+    </div>`;
   }
 }
 
@@ -555,6 +587,14 @@ async function loadDownloadPage(pageElement) {
     const response = await fetch('/download.html');
     const html = await response.text();
     
+    // Extract metadata from the HTML
+    if (!metadataCache.download) {
+      metadataCache.download = extractMetadata(html);
+    }
+    
+    // Apply metadata
+    applyMetadata(metadataCache.download);
+    
     // Extract content from the download page
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
@@ -569,6 +609,11 @@ async function loadDownloadPage(pageElement) {
     pageElement.innerHTML = content;
   } catch (error) {
     console.error('Error loading download page:', error);
+    pageElement.innerHTML = `
+    <div class="text-white text-center py-10">
+      <h2 class="text-xl font-bold mb-2">Error loading download page</h2>
+      <p class="text-gray-400">Please notify us on the Floaty Discord if this continues.</p>
+    </div>`;
   }
 }
 
@@ -651,6 +696,14 @@ async function loadPostPage(pageElement) {
     const response = await fetch('/post.html');
     const html = await response.text();
     
+    // Extract template metadata from the HTML
+    if (!metadataCache.post) {
+      metadataCache.post = extractMetadata(html);
+    }
+    
+    // Note: For post pages, we'll apply dynamic metadata in the initPostPage function
+    // based on the specific post content after fetching it
+    
     // Extract content from the post page
     const tempDiv = document.createElement('div');
     tempDiv.innerHTML = html;
@@ -665,80 +718,207 @@ async function loadPostPage(pageElement) {
     pageElement.innerHTML = content;
   } catch (error) {
     console.error('Error loading post page:', error);
+    pageElement.innerHTML = `
+    <div class="text-white text-center py-10">
+      <h2 class="text-xl font-bold mb-2">Error loading post</h2>
+      <p class="text-gray-400">Please notify us on the Floaty Discord if this continues.</p>
+    </div>`;
   }
 }
 
 function initPostPage(params) {
-  // Load post content
+  // Create a function to escape single quotes in strings
+  const escapeSingleQuotes = (str) => {
+    return str ? str.replace(/'/g, '\\' + "'" ) : '';
+  };
+
+  // Create the script content as a string with proper escaping
+  const scriptContent = [
+    '// Utility: get slug from URL (expected pattern: /post/<slug>)',
+    'function getSlugFromPath() {',
+    '  const match = window.location.pathname.match(\'/post/([^/]+)\');',
+    '  return match ? decodeURIComponent(match[1]) : null;',
+    '}',
+    '',
+    '// Apply dynamic metadata for a specific post',
+    'function applyPostMetadata(post) {',
+    '  // Clear any existing dynamic metadata',
+    '  document.querySelectorAll(\'meta[data-spa-meta="true"], link[data-spa-meta="true"]\').forEach(el => el.remove());',
+    '  ',
+    '  // Set document title',
+    '  document.title = post ? (post.title + \' - Floaty\') : \'Not Found - Floaty\';',
+    '  ',
+    '  if (!post) return;',
+    '  ',
+    '  // Create meta tags for the post',
+    '  const metaTags = [',
+    '    // Basic metadata',
+    '    { name: \'description\', content: post.summary || \'\' },',
+    '    // Open Graph metadata',
+    '    { property: \'og:type\', content: \'article\' },',
+    '    { property: \'og:title\', content: post.title + \' - Floaty\' || \'\' },',
+    '    { property: \'og:description\', content: post.summary || \'\' },',
+    '    { property: \'og:url\', content: window.location.origin + \'/post/\' + (post.url || getSlugFromPath() || \'\') },',
+    '    { property: \'og:image\', content: post.thumbnail || \'\' },,',
+    '    // Twitter Card metadata',
+    '    { name: \'twitter:card\', content: \'summary_large_image\' },',
+    '    { name: \'twitter:title\', content: post.title + \' - Floaty\' || \'\' },',
+    '    { name: \'twitter:description\', content: post.summary || \'\' },',
+    '    { name: \'twitter:image\', content: post.thumbnail || \'\' }',
+    '  ];',
+    '  ',
+    '  // Add article metadata if available',
+    '  if (post.date || post.createdAt) {',
+    '    metaTags.push({ property: \'article:published_time\', content: post.date || post.createdAt });',
+    '  }',
+    '  if (post.author) {',
+    '    metaTags.push({ property: \'article:author\', content: post.author });',
+    '  }',
+    '  ',
+    '  // Add tags as keywords',
+    '  if (Array.isArray(post.tags) && post.tags.length > 0) {',
+    '    const keywords = post.tags.map(tag => typeof tag === \'object\' ? tag.name : tag).join(\', \');',
+    '    if (keywords) {',
+    '      metaTags.push({ name: \'keywords\', content: keywords });',
+    '    }',
+    '  }',
+    '  ',
+    '  // Create and append meta elements',
+    '  metaTags.forEach(meta => {',
+    '    const metaElement = document.createElement(\'meta\');',
+    '    Object.keys(meta).forEach(key => {',
+    '      metaElement.setAttribute(key, meta[key]);',
+    '    });',
+    '    metaElement.setAttribute(\'data-spa-meta\', \'true\');',
+    '    document.head.appendChild(metaElement);',
+    '  });',
+    '  ',
+    '  // Create canonical link',
+    '  const canonicalLink = document.createElement(\'link\');',
+    '  canonicalLink.setAttribute(\'rel\', \'canonical\');',
+    '  canonicalLink.setAttribute(\'href\', window.location.origin + \'/post/\' + (post.url || getSlugFromPath() || \'\'));',
+    '  canonicalLink.setAttribute(\'data-spa-meta\', \'true\');',
+    '  document.head.appendChild(canonicalLink);',
+    '}',
+    '',
+    'async function fetchAndRenderPost() {',
+    '  const slug = getSlugFromPath();',
+    '  if (!slug) {',
+    '    document.getElementById(\'post-title\').textContent = \'Post Not Found\';',
+    '    document.getElementById(\'post-summary\').textContent = \'\';',
+    '    document.getElementById(\'post-content\').textContent = \'\';',
+    '    // Apply metadata for not found page',
+    '    applyPostMetadata(null);',
+    '    return;',
+    '  }',
+    '  try {',
+    '    const res = await fetch(\'/api/post/\' + encodeURIComponent(slug));',
+    '    if (!res.ok) throw new Error(\'Post not found\');',
+    '    const post = await res.json();',
+    '    ',
+    '    // Apply dynamic metadata based on post content',
+    '    applyPostMetadata(post);',
+    '    ',
+    '    // Title & summary',
+    '    if (document.getElementById(\'post-title\')) {',
+    '      document.getElementById(\'post-title\').textContent = post.title || \'\';',
+    '    }',
+    '    if (document.getElementById(\'post-summary\')) {',
+    '      document.getElementById(\'post-summary\').textContent = post.summary || \'\';',
+    '    }',
+    '    ',
+    '    // Content (markdown-it to HTML)',
+    '    const contentElement = document.getElementById(\'post-content\');',
+    '    if (contentElement) {',
+    '      if (window.markdownit) {',
+    '        const md = window.markdownit();',
+    '        contentElement.innerHTML = md.render(post.content || \'\');',
+    '      } else {',
+    '        contentElement.textContent = post.content || \'\';',
+    '      }',
+    '    }',
+    '    ',
+    '    // Date & author',
+    '    if (document.getElementById(\'post-date\')) {',
+    '      document.getElementById(\'post-date\').textContent = post.date || post.createdAt || \'\';',
+    '    }',
+    '    if (document.getElementById(\'post-author\')) {',
+    '      document.getElementById(\'post-author\').textContent = post.author || \'\';',
+    '    }',
+    '    ',
+    '    // Tags',
+    '    const tagsDiv = document.getElementById(\'post-tags\');',
+    '    if (tagsDiv) {',
+    '      tagsDiv.innerHTML = \'\';',
+    '      if (Array.isArray(post.tags)) {',
+    '        post.tags.forEach(tag => {',
+    '          const span = document.createElement(\'span\');',
+    '          span.className = \'px-2 py-0.5 rounded-full text-xs font-semibold text-white\';',
+    '          span.style.backgroundColor = tag.color || \'#6366f1\';',
+    '          span.textContent = tag.name || tag;',
+    '          tagsDiv.appendChild(span);',
+    '        });',
+    '      }',
+    '    }',
+    '    ',
+    '    // Images',
+    '    if (post.thumbnail) {',
+    '      if (document.getElementById(\'post-main-img\')) {',
+    '        document.getElementById(\'post-main-img\').src = post.thumbnail;',
+    '      }',
+    '      const bgImgEl = document.getElementById(\'post-bg-img-inner\');',
+    '      if (bgImgEl) {',
+    '        try {',
+    '          // Use JSON.stringify to properly escape the URL',
+    '          const safeUrl = JSON.stringify(post.thumbnail).slice(1, -1);',
+    '          bgImgEl.style.backgroundImage = \'url(\' + safeUrl + \')\';',
+    '        } catch (e) {',
+    '          console.error(\'Error setting background image:\', e);',
+    '        }',
+    '      }',
+    '    }',
+    '  } catch (e) {',
+    '    console.error(\'Error loading post:\', e);',
+    '    if (document.getElementById(\'post-title\')) {',
+    '      document.getElementById(\'post-title\').textContent = \'Post Not Found\';',
+    '    }',
+    '    if (document.getElementById(\'post-summary\')) {',
+    '      document.getElementById(\'post-summary\').textContent = \'\';',
+    '    }',
+    '    if (document.getElementById(\'post-content\')) {',
+    '      document.getElementById(\'post-content\').textContent = \'\';',
+    '    }',
+    '    // Apply metadata for not found page',
+    '    applyPostMetadata(null);',
+    '  }',
+    '}',
+    '',
+    '// Initialize the post',
+    'fetchAndRenderPost();'
+  ].join('\n');
+
+  // Create and append the script
   const script = document.createElement('script');
-  script.textContent = `
-    // Utility: get slug from URL (expected pattern: /post/<slug>)
-    function getSlugFromPath() {
-      const match = window.location.pathname.match(/\\/post\\/([^\\/]+)/);
-      return match ? decodeURIComponent(match[1]) : null;
-    }
-    async function fetchAndRenderPost() {
-      const slug = getSlugFromPath();
-      if (!slug) {
-        document.getElementById('post-title').textContent = 'Post Not Found';
-        document.getElementById('post-summary').textContent = '';
-        document.getElementById('post-content').textContent = '';
-        document.getElementById('page-title').textContent = 'Not Found - FloatyWeb';
-        return;
-      }
-      try {
-        const res = await fetch(\`/api/post/\${encodeURIComponent(slug)}\`);
-        if (!res.ok) throw new Error('Post not found');
-        const post = await res.json();
-        // Title & summary
-        document.getElementById('post-title').textContent = post.title;
-        document.getElementById('post-summary').textContent = post.summary;
-        document.title = \`\${post.title} - FloatyWeb\`;
-        // Content (markdown-it to HTML)
-        if (window.markdownit) {
-          const md = window.markdownit();
-          document.getElementById('post-content').innerHTML = md.render(post.content || '');
-        } else {
-          document.getElementById('post-content').textContent = post.content;
-        }
-        // Date & author
-        document.getElementById('post-date').textContent = post.date || post.createdAt;
-        document.getElementById('post-author').textContent = post.author || '';
-        // Tags
-        const tagsDiv = document.getElementById('post-tags');
-        tagsDiv.innerHTML = '';
-        if (Array.isArray(post.tags)) {
-          post.tags.forEach(tag => {
-            const span = document.createElement('span');
-            span.className = 'px-2 py-0.5 rounded-full text-xs font-semibold text-white';
-            span.style.backgroundColor = tag.color || '#6366f1';
-            span.textContent = tag.name || tag;
-            tagsDiv.appendChild(span);
-          });
-        }
-        // Images
-        if (post.thumbnail) {
-          document.getElementById('post-main-img').src = post.thumbnail;
-          document.getElementById('post-bg-img-inner').style.backgroundImage = \`url('\${post.thumbnail}')\`;
-        }
-      } catch (e) {
-        document.getElementById('post-title').textContent = 'Post Not Found';
-        document.getElementById('post-summary').textContent = '';
-        document.getElementById('post-content').textContent = '';
-        document.title = 'Not Found - FloatyWeb';
-      }
-    }
-    fetchAndRenderPost();
-  `;
+  script.textContent = scriptContent;
   document.body.appendChild(script);
 }
 
+// ...
 // CHANGELOGS PAGE
 async function loadChangelogsPage(pageElement) {
   try {
     // Load the changelogs HTML content
     const response = await fetch('/changelogs.html');
     const html = await response.text();
+    
+    // Extract metadata from the HTML
+    if (!metadataCache.changelogs) {
+      metadataCache.changelogs = extractMetadata(html);
+    }
+    
+    // Apply metadata
+    applyMetadata(metadataCache.changelogs);
+    
     const parser = new DOMParser();
     const doc = parser.parseFromString(html, 'text/html');
     
@@ -752,7 +932,6 @@ async function loadChangelogsPage(pageElement) {
     try {
       // Load the script
       await loadScript('/changelogs.js');
-      
       // Wait a small amount of time for the script to register
       await new Promise(resolve => setTimeout(resolve, 100));
       
@@ -762,6 +941,7 @@ async function loadChangelogsPage(pageElement) {
       } else {
         console.error('Changelogs module not properly loaded');
       }
+
     } catch (scriptError) {
       console.error('Error loading changelogs script:', scriptError);
       throw new Error('Failed to load changelogs functionality');
@@ -771,7 +951,7 @@ async function loadChangelogsPage(pageElement) {
     pageElement.innerHTML = `
       <div class="text-white text-center py-10">
         <h2 class="text-xl font-bold mb-2">Error loading changelogs</h2>
-        <p class="text-gray-400">Please try refreshing the page or contact support if the problem persists.</p>
+        <p class="text-gray-400">Please notify us on the Floaty Discord if this continues.</p>
       </div>`;
   }
 }
@@ -813,6 +993,8 @@ function initChangelogsPage() {
       .then(res => res.json())
       .then(data => {
         window.allChangelogs = data.posts || [];
+        window.changelogsModule.scrollToChangelog();
+
         
         // Call functions from changelogs.js
         if (typeof fetchAndRenderChangelogsByChannel === 'function') {
@@ -824,6 +1006,8 @@ function initChangelogsPage() {
         }
         
         if (!list) return;
+
+        
         
         // Use renderChangelogCard from changelogs.js if available
         if (typeof renderChangelogCard === 'function') {
@@ -879,4 +1063,64 @@ function extractContentBetween(container, startId, endId) {
   }
   
   return content;
+}
+
+// Extract metadata from HTML
+function extractMetadata(html) {
+  const parser = new DOMParser();
+  const doc = parser.parseFromString(html, 'text/html');
+  const metaTags = doc.querySelectorAll('meta');
+  const linkTags = doc.querySelectorAll('link[rel="canonical"], link[rel="alternate"]');
+  const titleTag = doc.querySelector('title');
+  
+  const metadata = {
+    meta: Array.from(metaTags).map(tag => tag.outerHTML),
+    links: Array.from(linkTags).map(tag => tag.outerHTML),
+    title: titleTag ? titleTag.textContent : null
+  };
+  
+  return metadata;
+}
+
+// Apply metadata to document head
+function applyMetadata(metadata) {
+  if (!metadata) return;
+  
+  // Set title if provided
+  if (metadata.title) {
+    document.title = metadata.title;
+  }
+  
+  // Add meta tags
+  if (metadata.meta && metadata.meta.length > 0) {
+    const metaContainer = document.createElement('div');
+    metadata.meta.forEach(metaHTML => {
+      metaContainer.innerHTML = metaHTML;
+      const meta = metaContainer.firstChild;
+      // Mark as SPA metadata for easy removal later
+      meta.setAttribute('data-spa-meta', 'true');
+      document.head.appendChild(meta);
+    });
+  }
+  
+  // Add link tags
+  if (metadata.links && metadata.links.length > 0) {
+    const linkContainer = document.createElement('div');
+    metadata.links.forEach(linkHTML => {
+      linkContainer.innerHTML = linkHTML;
+      const link = linkContainer.firstChild;
+      // Mark as SPA metadata for easy removal later
+      link.setAttribute('data-spa-meta', 'true');
+      document.head.appendChild(link);
+    });
+  }
+}
+
+// Clear existing dynamic metadata
+function clearMetadata() {
+  // Remove meta tags added by the router
+  document.querySelectorAll('meta[data-spa-meta="true"]').forEach(tag => tag.remove());
+  
+  // Remove link tags added by the router
+  document.querySelectorAll('link[data-spa-meta="true"]').forEach(tag => tag.remove());
 }

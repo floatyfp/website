@@ -2,10 +2,7 @@
 (function() {
   'use strict';
 
-  // Check if we're running in a browser environment
-  if (typeof window === 'undefined') {
-    return; // Exit if not in a browser
-  }
+
 
   // Function to render changelogs
   function renderChangelogs(posts) {
@@ -260,15 +257,19 @@ function initializeChangelogs() {
       }
     });
 
-  // Handle hash changes
-  window.addEventListener('hashchange', scrollToChangelog);
+  // Initial check in case the page loads with a hash
+  if (window.location.hash) {
+    // Small delay to ensure the page has loaded
+    setTimeout(scrollToChangelog, 100);
+  }
 }
 
   // Export the public API
   const changelogsModule = {
     initializeChangelogs,
     renderChangelogs,
-    fetchAndRenderChangelogsByChannel
+    fetchAndRenderChangelogsByChannel,
+    scrollToChangelog
   };
 
   // Expose to global scope

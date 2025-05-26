@@ -3,7 +3,27 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title id="page-title">Loading... - FloatyWeb</title>
+  <title id="page-title">Loading... - Floaty</title>
+  
+  <!-- Dynamic Meta Tags (will be updated by JavaScript) -->
+  <meta name="description" id="meta-description" content="Loading post...">
+  
+  <!-- Open Graph / Facebook -->
+  <meta property="og:type" content="article">
+  <meta property="og:url" id="og-url" content="">
+  <meta property="og:title" id="og-title" content="Loading... - Floaty">
+  <meta property="og:description" id="og-description" content="Loading post...">
+  <meta property="og:image" id="og-image" content="https://floaty.fyi/images/og-default.png">
+  
+  <!-- Twitter -->
+  <meta property="twitter:card" content="summary_large_image">
+  <meta property="twitter:url" id="twitter-url" content="">
+  <meta property="twitter:title" id="twitter-title" content="Loading... - Floaty">
+  <meta property="twitter:description" id="twitter-description" content="Loading post...">
+  <meta property="twitter:image" id="twitter-image" content="https://floaty.fyi/images/og-default.png">
+  
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="/favicon.ico">
   <link href="/tailwind.output.css" rel="stylesheet">
   <link href="/fonts.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/markdown-it/dist/markdown-it.min.js"></script>
@@ -143,23 +163,83 @@
       const match = window.location.pathname.match(/\/post\/([^\/]+)/);
       return match ? decodeURIComponent(match[1]) : null;
     }
+    
+    // Check if we're in an SPA context
+    const isSPA = window.isSPA || window.history && window.history.pushState;
+    function updateMetadata(post) {
+      const title = post.title || 'Floaty';
+      const description = post.summary || post.title || 'Check out this post on Floaty';
+      const image = post.thumbnail || 'https://floaty.fyi/images/og-default.png';
+      const url = window.location.href;
+
+      // Update document title
+      document.title = `${title} - Floaty`;
+      
+      // Update standard meta tags
+      updateMetaTag('name', 'description', description);
+      
+      // Update Open Graph tags
+      updateMetaTag('property', 'og:type', 'article');
+      updateMetaTag('property', 'og:url', url);
+      updateMetaTag('property', 'og:title', title);
+      updateMetaTag('property', 'og:description', description);
+      updateMetaTag('property', 'og:image', image);
+      
+      // Update Twitter Card tags
+      updateMetaTag('property', 'twitter:card', 'summary_large_image');
+      updateMetaTag('property', 'twitter:url', url);
+      updateMetaTag('property', 'twitter:title', title);
+      updateMetaTag('property', 'twitter:description', description);
+      updateMetaTag('property', 'twitter:image', image);
+      
+      // For SPAs, update the browser history state
+      if (isSPA) {
+        const pageTitle = `${title} - Floaty`;
+        const state = { 
+          title: pageTitle,
+          description: description,
+          image: image,
+          url: url
+        };
+        
+        // Update the URL without a page reload
+        window.history.replaceState(state, pageTitle, url);
+        
+        // Dispatch a custom event that other parts of your SPA can listen to
+        window.dispatchEvent(new CustomEvent('page-updated', { detail: state }));
+      }
+    }
+    
+    function updateMetaTag(attr, name, content) {
+      let tag = document.querySelector(`meta[${attr}="${name}"]`);
+      if (!tag) {
+        tag = document.createElement('meta');
+        tag.setAttribute(attr, name);
+        document.head.appendChild(tag);
+      }
+      tag.setAttribute('content', content || '');
+    }
+
     async function fetchAndRenderPost() {
       const slug = getSlugFromPath();
       if (!slug) {
         document.getElementById('post-title').textContent = 'Post Not Found';
         document.getElementById('post-summary').textContent = '';
         document.getElementById('post-content').textContent = '';
-        document.getElementById('page-title').textContent = 'Not Found - FloatyWeb';
+        document.getElementById('page-title').textContent = 'Not Found - Floaty';
         return;
       }
       try {
         const res = await fetch(`/api/post/${encodeURIComponent(slug)}`);
         if (!res.ok) throw new Error('Post not found');
         const post = await res.json();
-        // Title & summary
+        
+        // Update metadata for social sharing
+        updateMetadata(post);
+        
+        // Update the page content
         document.getElementById('post-title').textContent = post.title;
         document.getElementById('post-summary').textContent = post.summary;
-        document.getElementById('page-title').textContent = `${post.title} - FloatyWeb`;
         // Content (markdown-it to HTML)
         if (window.markdownit) {
           const md = window.markdownit();
@@ -191,7 +271,7 @@
         document.getElementById('post-title').textContent = 'Post Not Found';
         document.getElementById('post-summary').textContent = '';
         document.getElementById('post-content').textContent = '';
-        document.getElementById('page-title').textContent = 'Not Found - FloatyWeb';
+        document.getElementById('page-title').textContent = 'Not Found - Floaty';
       }
     }
     fetchAndRenderPost();
