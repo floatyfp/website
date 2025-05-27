@@ -170,7 +170,7 @@ Future<Response> deployHandler(Request req) async {
       },
     );
     // Notify all connected websocket clients about the new changelog session
-    for (final socket in globalWebSocketClients) {
+    for (final socket in globalWebSocketClients.values) {
       socket.sink.add(jsonEncode({
         'type': 'changelog_session_created',
         'sessionId': sessionId,

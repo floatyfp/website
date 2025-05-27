@@ -28,3 +28,4 @@ doc/api/
 data/blog.db
 data/uploads/
 files/
+*.db

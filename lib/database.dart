@@ -127,7 +127,7 @@ class DatabaseManager {
     stmt.dispose();
     final env = DotEnv(includePlatformEnvironment: true)..load();
     // Notify all connected websocket clients about the new changelog session
-    for (final socket in globalWebSocketClients) {
+    for (final socket in globalWebSocketClients.values) {
       socket.sink.add(jsonEncode({
         'type': 'notification',
         'id': type == 'changelog'
@@ -289,7 +289,7 @@ class DatabaseManager {
     final rows =
         db.select('SELECT * FROM deployments WHERE id = ?', [deploymentId]);
     final row = rows.first;
-    for (final socket in globalWebSocketClients) {
+    for (final socket in globalWebSocketClients.values) {
       socket.sink.add(jsonEncode({
         'type': 'notification',
         'id': env['DEPLOY_CHANNEL_ID'],

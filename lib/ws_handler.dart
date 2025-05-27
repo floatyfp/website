@@ -1,40 +1,155 @@
-import 'package:dotenv/dotenv.dart';
+import 'dart:async';
 import 'dart:convert';
+import 'package:dotenv/dotenv.dart';
 import 'package:shelf/shelf.dart';
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+import 'package:web_socket_channel/status.dart' as ws_status;
 import 'session_manager.dart';
 import 'database.dart';
 
 // Registry of connected WS clients (metadata)
-final List<Map<String, String>> connectedClients = [];
+final List<Map<String, dynamic>> connectedClients = [];
 // Exported list of connected WebSocketChannel clients for broadcasting
-final List<WebSocketChannel> globalWebSocketClients = [];
+final Map<String, WebSocketChannel> globalWebSocketClients = {};
+// Ping interval in seconds
+const int _pingInterval = 30;
+// Client timeout in seconds (2 missed pings)
+const int _clientTimeout = _pingInterval * 3; // 90 seconds
 
 /// Creates a WebSocket handler with token auth and session logic.
 Handler wsHandler() {
   final env = DotEnv(includePlatformEnvironment: true)..load();
-  final socketHandler =
-      webSocketHandler((WebSocketChannel socket, String? protocol) {
-    print('WebSocket connection established (protocol: $protocol)');
-    // start TTL cleanup
+  // Clean up dead connections periodically
+  Timer.periodic(Duration(seconds: _pingInterval * 2), (timer) {
+    final now = DateTime.now();
+    final deadClients = <String>[];
+    
+    globalWebSocketClients.forEach((id, socket) {
+      try {
+        final client = connectedClients.firstWhere(
+          (c) => c['id'] == id,
+          orElse: () => {'lastSeen': now.toIso8601String()},
+        );
+        
+        final lastSeen = DateTime.parse(client['lastSeen']);
+        if (now.difference(lastSeen).inSeconds > _clientTimeout) {
+          print('Closing dead connection: $id');
+          deadClients.add(id);
+          try {
+            socket.sink.close(ws_status.goingAway);
+          } catch (e) {
+            print('Error closing dead connection $id: $e');
+          }
+        }
+      } catch (e) {
+        print('Error checking client $id: $e');
+        deadClients.add(id);
+      }
+    });
+    
+    // Clean up
+    for (final id in deadClients) {
+      try {
+        globalWebSocketClients.remove(id);
+        connectedClients.removeWhere((client) => client['id'] == id);
+      } catch (e) {
+        print('Error cleaning up client $id: $e');
+      }
+    }
+  });
+
+  final socketHandler = webSocketHandler((WebSocketChannel socket, String? protocol) {
+    final clientId = DateTime.now().millisecondsSinceEpoch.toString();
+    print('WebSocket connection established (ID: $clientId, protocol: $protocol)');
+    
+    // Start TTL cleanup
     SessionManager.startCleanup();
-    globalWebSocketClients.add(socket);
+    
+    // Track client connection
+    globalWebSocketClients[clientId] = socket;
+    Timer? pingTimer;
+    DateTime? lastPingTime;
+    bool isAlive = true;
+    
+    // Function to send pings
+    void startPingTimer() {
+      pingTimer?.cancel();
+      pingTimer = Timer.periodic(Duration(seconds: _pingInterval), (timer) {
+        if (!isAlive) {
+          print('Closing dead connection: $clientId');
+          socket.sink.close(ws_status.goingAway);
+          timer.cancel();
+          return;
+        }
+        
+        isAlive = false;
+        lastPingTime = DateTime.now();
+        try {
+          socket.sink.add(jsonEncode({
+            'type': 'ping',
+            'timestamp': lastPingTime!.millisecondsSinceEpoch,
+          }));
+        } catch (e) {
+          print('Error sending ping to $clientId: $e');
+          timer.cancel();
+          socket.sink.close(ws_status.goingAway);
+        }
+      });
+    }
+    
+    // Handle connection close
+    socket.sink.done.then((_) {
+      print('WebSocket connection closed: $clientId');
+      pingTimer?.cancel();
+      globalWebSocketClients.remove(clientId);
+      connectedClients.removeWhere((client) => client['id'] == clientId);
+    }).catchError((error) {
+      print('WebSocket error for $clientId: $error');
+      pingTimer?.cancel();
+      globalWebSocketClients.remove(clientId);
+      connectedClients.removeWhere((client) => client['id'] == clientId);
+    });
+    
+    // Start the ping timer
+    startPingTimer();
+    
+    // Handle incoming messages
     socket.stream.listen((dynamic data) {
       if (data is! String) return;
+      
       Map<String, dynamic> msg;
       try {
         msg = jsonDecode(data) as Map<String, dynamic>;
       } catch (_) {
         return;
       }
+      
+      // Handle ping-pong messages
+      if (msg['type'] == 'pong') {
+        final timestamp = msg['timestamp'] as int?;
+        if (timestamp != null && lastPingTime != null) {
+          final latency = DateTime.now().millisecondsSinceEpoch - timestamp;
+          print('Ping latency for $clientId: ${latency}ms');
+        }
+        isAlive = true;
+        return;
+      }
+      
       final rid = msg['requestId'] as String?;
       final type = msg['type'] as String?;
       if (type == 'identify') {
-        connectedClients.add({
+        // Update or add client info
+        final clientInfo = {
+          'id': clientId,
           'name': msg['name'] as String? ?? 'unknown',
-          'connectedTime': DateTime.now().toIso8601String()
-        });
+          'connectedTime': DateTime.now().toIso8601String(),
+          'lastSeen': DateTime.now().toIso8601String(),
+        };
+
+        // Remove if already exists (reconnection)
+        connectedClients.removeWhere((client) => client['id'] == clientId);
+        connectedClients.add(clientInfo);
         socket.sink.add(jsonEncode(
             {'type': 'identify_ack', if (rid != null) 'requestId': rid}));
       } else if (type == 'create_session') {
@@ -138,7 +253,8 @@ Handler wsHandler() {
         }));
       } else if (type == 'get_last_deployment_id') {
         final db = DatabaseManager.db;
-        final rows = db.select('SELECT id FROM deployments ORDER BY created_at DESC LIMIT 1');
+        final rows = db.select(
+            'SELECT id FROM deployments ORDER BY created_at DESC LIMIT 1');
         if (rows.isEmpty) {
           socket.sink.add(jsonEncode({
             'type': 'last_deployment_id_result',
