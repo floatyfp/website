@@ -209,7 +209,7 @@ function renderDeployment(deployment) {
     const btn = document.createElement('button');
     btn.className = 'bg-[#29204a] text-white rounded-lg px-5 py-2 mt-2 font-semibold border-none transition-colors duration-200 flex items-center gap-2 hover:bg-[#64009E] download-btn';
     btn.innerHTML = `<img src="/images/downloadicon.png" alt="Download" class="w-6 h-6 object-contain" /> ${file.name || file.type || 'Download'}`;
-    btn.onclick = () => window.open('/media/' + file.path, '_blank');
+    btn.onclick = () => window.open('/download/media/' + file.path, '_blank');
     btnContainer.appendChild(btn);
   });
 }

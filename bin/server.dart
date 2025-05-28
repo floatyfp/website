@@ -45,6 +45,11 @@ void main() async {
     createStaticHandler('data/uploads',
         serveFilesOutsidePath: false, listDirectories: false),
   );
+  router.mount(
+    '/download/media',
+    createStaticHandler('files',
+        serveFilesOutsidePath: false, listDirectories: false),
+  );
   // Fetch post content by slug
   router.get('/api/post/<slug>', getPostBySlugHandler);
 
