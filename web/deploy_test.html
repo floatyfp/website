@@ -18,12 +18,12 @@
       <label>Upload ZIP File <input type="file" id="zipfile" accept=".zip" required></label>
       <div style="color:#ffb4b4;background:#222;padding:8px;border-radius:6px;margin:8px 0;">
         <strong>Note:</strong><br>
-        The ZIP <b>must</b> contain an <code>info.json</code> file at the root with the structure shown below.<br>
-        <em>This page does <b>not</b> generate or upload info.json separately.</em>
+        The ZIP <b>must</b> contain an <code>manifest.json</code> file at the root with the structure shown below.<br>
+        <em>This page does <b>not</b> generate or upload manifest.json separately.</em>
       </div>
       <button id="deployBtn">Send Deploy</button>
       <div style="margin-top:20px;">
-        <strong>Example info.json:</strong>
+        <strong>Example manifest.json:</strong>
         <pre style="background:#232347;padding:10px;border-radius:8px;max-height:200px;overflow:auto;">{
   "version": "1.2.3",
   "flavor": "release",

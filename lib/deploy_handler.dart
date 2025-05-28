@@ -68,12 +68,12 @@ Future<Response> deployHandler(Request req) async {
         File(outPath).writeAsBytesSync(file.content as List<int>);
       }
     }
-    // Read info.json from extracted files
-    final infoFile = File(p.join(tmpDir.path, 'info.json'));
+    // Read manifest.json from extracted files
+    final infoFile = File(p.join(tmpDir.path, 'manifest.json'));
     if (!infoFile.existsSync()) {
       tmpDir.deleteSync(recursive: true);
       return Response(400,
-          body: jsonEncode({'error': 'info.json missing from ZIP'}),
+          body: jsonEncode({'error': 'manifest.json missing from ZIP'}),
           headers: {'content-type': 'application/json'});
     }
     final infoJson = infoFile.readAsStringSync();
@@ -83,7 +83,7 @@ Future<Response> deployHandler(Request req) async {
     } catch (e) {
       tmpDir.deleteSync(recursive: true);
       return Response(400,
-          body: jsonEncode({'error': 'Invalid info.json: $e'}),
+          body: jsonEncode({'error': 'Invalid manifest.json: $e'}),
           headers: {'content-type': 'application/json'});
     }
     final version = info['version'] as String?;
@@ -93,8 +93,9 @@ Future<Response> deployHandler(Request req) async {
     if (version == null || flavor == null || platforms == null) {
       tmpDir.deleteSync(recursive: true);
       return Response(400,
-          body: jsonEncode(
-              {'error': 'Missing version, flavor, or platforms in info.json'}),
+          body: jsonEncode({
+            'error': 'Missing version, flavor, or platforms in manifest.json'
+          }),
           headers: {'content-type': 'application/json'});
     }
 
@@ -139,7 +140,7 @@ Future<Response> deployHandler(Request req) async {
       }
       updatedPlatforms.add({'platform': platform, 'files': updatedFiles});
     }
-    // Save updated info.json at files/<platform>/<version>/info.json for each platform
+    // Save updated manifest.json at files/<platform>/<version>/manifest.json for each platform
     final updatedInfo = {
       'version': version,
       'flavor': flavor,
@@ -148,10 +149,10 @@ Future<Response> deployHandler(Request req) async {
     final updatedInfoJson = jsonEncode(updatedInfo);
     for (final plat in updatedPlatforms) {
       final platform = plat['platform'];
-      final infoPath = p.join('files', platform, version, 'info.json');
+      final infoPath = p.join('files', platform, version, 'manifest.json');
       File(infoPath).writeAsStringSync(updatedInfoJson);
     }
-    // Insert info.json into deployments table
+    // Insert manifest.json into deployments table
     final deploymentId = DatabaseManager.insertDeployment(
       version: version,
       flavor: flavor,
