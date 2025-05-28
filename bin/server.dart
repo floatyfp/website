@@ -45,11 +45,23 @@ void main() async {
     createStaticHandler('data/uploads',
         serveFilesOutsidePath: false, listDirectories: false),
   );
-  router.mount(
-    '/download/media',
-    createStaticHandler('files',
-        serveFilesOutsidePath: false, listDirectories: false),
-  );
+
+  final downloadHandler = const Pipeline()
+      .addMiddleware((innerHandler) => (request) async {
+            final response = await innerHandler(request);
+            if (response.statusCode == 200) {
+              final filename = request.url.pathSegments.last;
+              return response.change(headers: {
+                'Content-Disposition': 'attachment; filename="$filename"',
+                ...response.headers,
+              });
+            }
+            return response;
+          })
+      .addHandler(createStaticHandler('files',
+          serveFilesOutsidePath: false, listDirectories: false));
+
+  router.mount('/download/media', downloadHandler);
   // Fetch post content by slug
   router.get('/api/post/<slug>', getPostBySlugHandler);
 
