@@ -195,18 +195,48 @@ Future<Response> publishHandler(Request req) async {
         print('[$requestId] Metadata: ${sessionData.metadata}');
         print('[$requestId] Mode: ${sessionData.mode}');
         print('[$requestId] Post ID: $postId');
-        versionVal = (sessionData.metadata != null &&
-                sessionData.metadata!['version'] != null)
-            ? sessionData.metadata!['version'].toString()
-            : '';
-        flavorVal = (sessionData.metadata != null &&
-                sessionData.metadata!['flavor'] != null)
-            ? sessionData.metadata!['flavor'].toString()
-            : '';
-        deploymentIdVal = (sessionData.metadata != null &&
-                sessionData.metadata!['deploymentId'] != null)
-            ? int.parse(sessionData.metadata!['deploymentId'].toString())
-            : null;
+
+        // For edit mode, first get existing values from the database
+        if (sessionData.mode == 'edit' && sessionData.postId != null) {
+          final existingPost = DatabaseManager.db.select(
+            'SELECT version, flavor, deploymentId FROM posts WHERE id = ?',
+            [sessionData.postId],
+          );
+
+          if (existingPost.isNotEmpty) {
+            versionVal = (sessionData.metadata != null &&
+                    sessionData.metadata!['version'] != null)
+                ? sessionData.metadata!['version'].toString()
+                : existingPost.first['version']?.toString() ?? '';
+
+            flavorVal = (sessionData.metadata != null &&
+                    sessionData.metadata!['flavor'] != null)
+                ? sessionData.metadata!['flavor'].toString()
+                : existingPost.first['flavor']?.toString() ?? '';
+
+            deploymentIdVal = (sessionData.metadata != null &&
+                    sessionData.metadata!['deploymentId'] != null)
+                ? int.parse(sessionData.metadata!['deploymentId'].toString())
+                : existingPost.first['deploymentId'] as int?;
+
+            print(
+                '[$requestId] Using existing values - Version: $versionVal, Flavor: $flavorVal, DeploymentId: $deploymentIdVal');
+          }
+        } else {
+          // For new posts, use the values from metadata
+          versionVal = (sessionData.metadata != null &&
+                  sessionData.metadata!['version'] != null)
+              ? sessionData.metadata!['version'].toString()
+              : '';
+          flavorVal = (sessionData.metadata != null &&
+                  sessionData.metadata!['flavor'] != null)
+              ? sessionData.metadata!['flavor'].toString()
+              : '';
+          deploymentIdVal = (sessionData.metadata != null &&
+                  sessionData.metadata!['deploymentId'] != null)
+              ? int.parse(sessionData.metadata!['deploymentId'].toString())
+              : null;
+        }
       }
 
       // Schedule entire post for release (do NOT delete previous changelogs)

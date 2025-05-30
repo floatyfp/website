@@ -253,7 +253,36 @@ Type some *Markdown*.</textarea>
         if (post.summary) document.getElementById('summary').value = post.summary;
         if (post.url) document.getElementById('url').value = post.url;
         if (post.scheduledAt) document.getElementById('scheduledAt').value = post.scheduledAt;
-        if (post.dropdowns) document.getElementById('dropdowns').value = Array.isArray(post.dropdowns) ? JSON.stringify(post.dropdowns) : post.dropdowns;
+        // Handle dropdowns - parse JSON and set up the changelog entries
+        if (post.dropdowns) {
+          try {
+            let dropdowns = post.dropdowns;
+            if (typeof dropdowns === 'string') {
+              dropdowns = JSON.parse(dropdowns);
+            }
+            if (Array.isArray(dropdowns)) {
+              // Store the dropdowns for the changelog editor
+              window.changelogEntries = dropdowns.map(entry => ({
+                type: entry.type || '',
+                content: entry.content || ''
+              }));
+              
+              // Update the UI if the changelog editor is open
+              if (typeof renderChangelogEntries === 'function') {
+                renderChangelogEntries();
+              }
+              
+              // Update the hidden input with the original JSON
+              document.getElementById('dropdowns').value = JSON.stringify(dropdowns);
+            }
+          } catch (e) {
+            console.error('Error parsing dropdowns:', e);
+            // Fallback to raw value if parsing fails
+            document.getElementById('dropdowns').value = typeof post.dropdowns === 'string' 
+              ? post.dropdowns 
+              : JSON.stringify(post.dropdowns);
+          }
+        }
 
         if (post.author) document.getElementById('author').value = post.author;
         if (post.thumbnail) document.getElementById('thumbnail').value = post.thumbnail;
@@ -652,6 +681,9 @@ document.addEventListener('DOMContentLoaded', function() {
     `;
     // Remove entry
     card.querySelector('.remove-entry').onclick = () => {
+      // Initialize changelog entries array and dropdowns if they don't exist
+      window.changelogEntries = [];
+      window.currentTags = [];
       changelogEntries.splice(idx, 1);
       renderChangelogEntries();
     };

@@ -403,7 +403,7 @@ function initHomePage() {
               card.querySelector('[data-type="summary"]').textContent = post.summary;
               card.querySelector('[data-type="date"]').textContent = mod.formatDate(post.date || post.createdAt);
               card.querySelector('[data-type="thumbnail"]').src = post.thumbnail;
-              card.href = post.type == 'changelog' ? \`/changelog#\${post.version}\` : \`/post/\${post.url}\`;
+              card.href = post.type == 'changelog' ? \`/changelog#\${post.deploymentId}\` : \`/post/\${post.url}\`;
               // Render tags
               const tagsDiv = card.querySelector('[data-type="tags"]');
               tagsDiv.innerHTML = '';
@@ -490,7 +490,7 @@ function initBlogPage() {
                 card.querySelector('[data-type="summary"]').textContent = post.summary;
                 card.querySelector('[data-type="date"]').textContent = mod.formatDate(post.date || post.createdAt);
                 card.style.backgroundImage = \`url('\${post.thumbnail}')\`;
-                card.querySelector('[data-type="href"]').href = post.type == 'changelog' ? \`/changelog#\${post.version}\` : \`/post/\${post.url}\`;
+                card.querySelector('[data-type="href"]').href = post.type == 'changelog' ? \`/changelog#\${post.deploymentId}\` : \`/post/\${post.url}\`;
                 // Render tags
                 const tagsDiv = card.querySelector('[data-type="tags"]');
                 tagsDiv.innerHTML = '';
@@ -514,7 +514,7 @@ function initBlogPage() {
                 card.querySelector('[data-type="summary"]').textContent = post.summary;
                 card.querySelector('[data-type="date"]').textContent = mod.formatDate(post.date || post.createdAt);
                 card.querySelector('[data-type="thumbnail"]').src = post.thumbnail;
-                card.href = post.type == 'changelog' ? \`/changelog#\${post.version}\` : \`/post/\${post.url}\`;
+                card.href = post.type == 'changelog' ? \`/changelog#\${post.deploymentId}\` : \`/post/\${post.url}\`;
                 // Render tags
                 const tagsDiv = card.querySelector('[data-type="tags"]');
                 tagsDiv.innerHTML = '';
