@@ -291,16 +291,37 @@ Type some *Markdown*.</textarea>
         // Restore tags if present
         if (Array.isArray(post.tags)) {
           window.currentTags = post.tags.map(tag => {
-            // Accept both string tags and {name, color} objects
-            if (typeof tag === 'string') {
+            try {
+              // Check if tag is a JSON string that needs parsing
+              if (typeof tag === 'string' && (tag.startsWith('{') || tag.startsWith('['))) {
+                try {
+                  const parsedTag = JSON.parse(tag);
+                  if (typeof parsedTag === 'object' && parsedTag !== null) {
+                    return {
+                      name: parsedTag.name || String(parsedTag).substring(0, 50), // Use string representation if name is missing
+                      color: parsedTag.color || '#6366f1'
+                    };
+                  }
+                } catch (e) {
+                  console.warn('Failed to parse tag as JSON:', tag, e);
+                }
+              }
+              // Handle regular string tags
+              if (typeof tag === 'string') {
                 return { name: tag, color: '#6366f1' };
-            } else if (typeof tag === 'object' && tag !== null) {
-              return {
-                name: tag.name || '',
-                color: tag.color || '#6366f1'
-              };
+              }
+              // Handle object tags
+              if (typeof tag === 'object' && tag !== null) {
+                return {
+                  name: tag.name || '',
+                  color: tag.color || '#6366f1'
+                };
+              }
+              return null;
+            } catch (e) {
+              console.error('Error processing tag:', tag, e);
+              return null;
             }
-            return null;
           }).filter(Boolean);
           if (typeof renderTags === 'function') renderTags();
         }
