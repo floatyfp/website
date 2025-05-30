@@ -289,41 +289,61 @@ Type some *Markdown*.</textarea>
         if (post.image) document.getElementById('image').value = post.image;
         if (post.content) editor.value = post.content;
         // Restore tags if present
-        if (Array.isArray(post.tags)) {
-          window.currentTags = post.tags.map(tag => {
-            try {
-              // Check if tag is a JSON string that needs parsing
-              if (typeof tag === 'string' && (tag.startsWith('{') || tag.startsWith('['))) {
-                try {
-                  const parsedTag = JSON.parse(tag);
-                  if (typeof parsedTag === 'object' && parsedTag !== null) {
-                    return {
-                      name: parsedTag.name || String(parsedTag).substring(0, 50), // Use string representation if name is missing
-                      color: parsedTag.color || '#6366f1'
-                    };
-                  }
-                } catch (e) {
-                  console.warn('Failed to parse tag as JSON:', tag, e);
+        if (post.tags) {
+          try {
+            // Ensure we're working with an array
+            const tagsArray = Array.isArray(post.tags) ? post.tags : [post.tags];
+            
+            window.currentTags = tagsArray.map(tag => {
+              try {
+                // If tag is already an object with name and color, use it directly
+                if (tag && typeof tag === 'object' && 'name' in tag) {
+                  return {
+                    name: String(tag.name || '').substring(0, 50),
+                    color: tag.color || '#6366f1'
+                  };
                 }
-              }
-              // Handle regular string tags
-              if (typeof tag === 'string') {
-                return { name: tag, color: '#6366f1' };
-              }
-              // Handle object tags
-              if (typeof tag === 'object' && tag !== null) {
+                
+                // Handle string tags (could be JSON or plain text)
+                if (typeof tag === 'string') {
+                  // Try to parse as JSON if it looks like JSON
+                  if (tag.trim().startsWith('{') || tag.trim().startsWith('[')) {
+                    try {
+                      const parsed = JSON.parse(tag);
+                      if (parsed && typeof parsed === 'object') {
+                        return {
+                          name: String(parsed.name || parsed).substring(0, 50),
+                          color: parsed.color || '#6366f1'
+                        };
+                      }
+                    } catch (e) {
+                      console.warn('Failed to parse tag as JSON, using as plain text:', tag, e);
+                    }
+                  }
+                  // Treat as plain text tag
+                  return { name: tag.substring(0, 50), color: '#6366f1' };
+                }
+                
+                // Fallback for any other case
                 return {
-                  name: tag.name || '',
-                  color: tag.color || '#6366f1'
+                  name: String(tag || '').substring(0, 50),
+                  color: '#6366f1'
                 };
+              } catch (e) {
+                console.error('Error processing tag:', tag, e);
+                return null;
               }
-              return null;
-            } catch (e) {
-              console.error('Error processing tag:', tag, e);
-              return null;
+            }).filter(Boolean);
+            
+            if (typeof renderTags === 'function') {
+              renderTags();
             }
-          }).filter(Boolean);
-          if (typeof renderTags === 'function') renderTags();
+          } catch (e) {
+            console.error('Error processing tags:', e);
+            window.currentTags = [];
+          }
+        } else {
+          window.currentTags = [];
         }
 
         window.currentPostType = data.postType || data.type || 'blog';

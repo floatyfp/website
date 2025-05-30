@@ -336,13 +336,36 @@ Future<Response> getAllPostsHandler(Request req) async {
       List<Map<String, dynamic>> tags = [];
       if (row['tags'] != null) {
         try {
-          final parsed = jsonDecode(row['tags'] as String);
-          if (parsed is List) {
-            tags = parsed
-                .map<Map<String, dynamic>>((e) => Map<String, dynamic>.from(e))
-                .toList();
+          dynamic parsed = row['tags'];
+          // Handle case where tags might already be a string (JSON)
+          if (parsed is String) {
+            parsed = jsonDecode(parsed);
           }
-        } catch (_) {}
+          
+          if (parsed is List) {
+            tags = parsed.map<Map<String, dynamic>>((e) {
+              // Handle case where tag is already an object or a string
+              if (e is Map) {
+                return Map<String, dynamic>.from(e);
+              } else if (e is String) {
+                // Try to parse string as JSON object
+                try {
+                  final decoded = jsonDecode(e);
+                  if (decoded is Map) {
+                    return Map<String, dynamic>.from(decoded);
+                  }
+                } catch (_) {
+                  // If not JSON, treat as plain string tag
+                  return {'name': e, 'color': '#6366f1'};
+                }
+              }
+              // Default fallback
+              return {'name': e.toString(), 'color': '#6366f1'};
+            }).toList();
+          }
+        } catch (e) {
+          print('Error parsing tags: $e');
+        }
       }
       final dateObj = DateTime.tryParse(createdAt);
       String formattedDate;
