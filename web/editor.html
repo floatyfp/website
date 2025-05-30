@@ -209,14 +209,29 @@ Type some *Markdown*.</textarea>
     const tagColorInput = document.getElementById('tagColorInput');
     const addTagBtn = document.getElementById('addTagBtn');
 
+    // Simple helper function to ensure a tag has the expected structure
+    function normalizeTag(tag) {
+      if (!tag || typeof tag !== 'object') {
+        return { name: String(tag || '').substring(0, 50), color: '#6366f1' };
+      }
+      
+      return {
+        name: tag.name ? String(tag.name).substring(0, 50) : 'Unnamed Tag',
+        color: tag.color || '#6366f1'
+      };
+    }
+    
     function renderTags() {
       tagsList.innerHTML = '';
       window.currentTags.forEach((tag, i) => {
+        // Normalize the tag before rendering
+        const normalizedTag = normalizeTag(tag);
+        
         const tagEl = document.createElement('span');
         tagEl.className = 'flex items-center gap-1 px-3 py-1 rounded-full text-sm font-medium';
-        tagEl.style.backgroundColor = tag.color;
+        tagEl.style.backgroundColor = normalizedTag.color;
         tagEl.style.color = '#fff';
-        tagEl.innerHTML = `${tag.name} <button type="button" class="ml-1 text-xs text-white bg-black/30 rounded-full px-1" title="Remove">&times;</button>`;
+        tagEl.innerHTML = `${normalizedTag.name} <button type="button" class="ml-1 text-xs text-white bg-black/30 rounded-full px-1" title="Remove">&times;</button>`;
         tagEl.querySelector('button').onclick = () => {
           window.currentTags.splice(i, 1);
           renderTags();
@@ -228,7 +243,8 @@ Type some *Markdown*.</textarea>
       const name = tagNameInput.value.trim();
       const color = tagColorInput.value;
       if (!name) return;
-      window.currentTags.push({ name, color });
+      // Add normalized tag to ensure consistent format
+      window.currentTags.push(normalizeTag({ name, color }));
       tagNameInput.value = '';
       renderTags();
     };
@@ -291,49 +307,57 @@ Type some *Markdown*.</textarea>
         // Restore tags if present
         if (post.tags) {
           try {
-            // Ensure we're working with an array
-            const tagsArray = Array.isArray(post.tags) ? post.tags : [post.tags];
+            // Handle different potential formats of tags
+            let tagsArray;
             
-            window.currentTags = tagsArray.map(tag => {
+            if (Array.isArray(post.tags)) {
+              // Direct array of tag objects
+              tagsArray = post.tags;
+            } else if (typeof post.tags === 'string') {
+              // JSON string representation of tags array
               try {
-                // If tag is already an object with name and color, use it directly
-                if (tag && typeof tag === 'object' && 'name' in tag) {
-                  return {
-                    name: String(tag.name || '').substring(0, 50),
-                    color: tag.color || '#6366f1'
-                  };
+                tagsArray = JSON.parse(post.tags);
+                if (!Array.isArray(tagsArray)) {
+                  tagsArray = [tagsArray]; // Handle single object in JSON
                 }
-                
-                // Handle string tags (could be JSON or plain text)
-                if (typeof tag === 'string') {
-                  // Try to parse as JSON if it looks like JSON
-                  if (tag.trim().startsWith('{') || tag.trim().startsWith('[')) {
-                    try {
-                      const parsed = JSON.parse(tag);
-                      if (parsed && typeof parsed === 'object') {
-                        return {
-                          name: String(parsed.name || parsed).substring(0, 50),
-                          color: parsed.color || '#6366f1'
-                        };
-                      }
-                    } catch (e) {
-                      console.warn('Failed to parse tag as JSON, using as plain text:', tag, e);
-                    }
-                  }
-                  // Treat as plain text tag
-                  return { name: tag.substring(0, 50), color: '#6366f1' };
-                }
-                
-                // Fallback for any other case
-                return {
-                  name: String(tag || '').substring(0, 50),
-                  color: '#6366f1'
-                };
               } catch (e) {
-                console.error('Error processing tag:', tag, e);
-                return null;
+                console.warn('Failed to parse tags JSON string:', e);
+                tagsArray = [{ name: post.tags, color: '#6366f1' }];
               }
-            }).filter(Boolean);
+            } else {
+              // Single tag object
+              tagsArray = [post.tags];
+            }
+            
+            // Process each tag to ensure proper format
+            window.currentTags = tagsArray.map(tag => {
+              // For direct normalization of tag objects
+              if (tag && typeof tag === 'object' && 'name' in tag) {
+                return normalizeTag(tag);
+              }
+              
+              // For string tags that might be JSON
+              if (typeof tag === 'string') {
+                if (tag.trim().startsWith('{')) {
+                  try {
+                    const parsed = JSON.parse(tag);
+                    return normalizeTag(parsed);
+                  } catch (e) {
+                    // Not valid JSON, use as plain string
+                    return { name: tag, color: '#6366f1' };
+                  }
+                } else {
+                  // Plain string tag
+                  return { name: tag, color: '#6366f1' };
+                }
+              }
+              
+              // Fallback for any other case
+              return { name: String(tag || 'Unknown Tag'), color: '#6366f1' };
+            }).filter(tag => tag && tag.name);
+            
+            // Log for debugging
+            console.log('Loaded tags:', window.currentTags);
             
             if (typeof renderTags === 'function') {
               renderTags();
