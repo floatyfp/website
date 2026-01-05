@@ -39,6 +39,10 @@ void main() async {
   router.get('/api/session-metadata', sessionMetadataHandler);
   // Get latest update
   router.get('/api/latest-update', latestUpdateHandler);
+  // Discord redirect
+  router.get('/discord', (Request req) {
+    return Response.found('https://discord.gg/r7YB39WENq');
+  });
   // Serve uploaded media
   router.mount(
     '/media/',

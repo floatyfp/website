@@ -139,6 +139,23 @@ Handler wsHandler() {
           'clients': connectedClients,
           if (rid != null) 'requestId': rid
         }));
+      } else if (type == 'get_last_deployment_id') {
+        final db = DatabaseManager.db;
+        final rows = db.select(
+            'SELECT id FROM deployments ORDER BY created_at DESC LIMIT 1');
+        if (rows.isEmpty) {
+          socket.sink.add(jsonEncode({
+            'type': 'last_deployment_id_result',
+            'error': 'No deployments found',
+            if (rid != null) 'requestId': rid
+          }));
+        } else {
+          socket.sink.add(jsonEncode({
+            'type': 'last_deployment_id_result',
+            'deploymentId': rows.first['id'].toString(),
+            if (rid != null) 'requestId': rid
+          }));
+        }
       } else if (type == 'set_required') {
         final deploymentId = msg['deploymentId'];
         if (deploymentId == null || deploymentId.toString().isEmpty) {
